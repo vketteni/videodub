@@ -1,0 +1,22 @@
+# Core video scraping package
+git+https://github.com/vketteni/video-scraper.git
+
+# Audio processing
+pydub>=0.25.1
+
+# Translation services (choose one or more)
+openai>=1.0.0          # For OpenAI API (GPT + TTS)
+# google-cloud-translate>=3.12.0  # For Google Translate API
+# google-cloud-texttospeech>=2.14.0  # For Google TTS
+# azure-cognitiveservices-speech>=1.34.0  # For Azure Speech Services
+
+# HTTP requests
+requests>=2.31.0
+
+# Additional utilities
+python-dotenv>=1.0.0     # For environment variables
+tqdm>=4.66.0            # Progress bars
+click>=8.1.0            # CLI framework (alternative to argparse)
+
+# Optional: for better audio processing
+# ffmpeg-python>=0.2.0   # Python wrapper for FFmpeg
