@@ -14,6 +14,7 @@ from .models import (
 )
 from .exceptions import PipelineError, VideoScrapingError, TranslationError, TTSError
 from ..config.validation import validate_video_url, validate_language_code
+from ..utils.cost_tracking import get_session_cost_summary, reset_global_cost_tracker
 
 
 logger = structlog.get_logger(__name__)
@@ -81,6 +82,9 @@ class TranslationPipeline:
         
         logger.info("Starting video processing", video_id=video_id, url=url)
         
+        # Reset cost tracking for this processing session
+        reset_global_cost_tracker()
+        
         try:
             # Step 1: Scrape video and extract metadata/transcript
             metadata, transcript_segments = await self._scrape_video(url)
@@ -103,6 +107,9 @@ class TranslationPipeline:
             
             # Step 4: Save all data to storage
             await self._save_pipeline_data(video_id, metadata, translated_segments, result)
+            
+            # Step 5: Capture cost tracking data
+            result.cost_summary = get_session_cost_summary()
             
             # Mark as completed
             result.mark_completed()
@@ -342,10 +349,18 @@ class TranslationPipeline:
                 output_directory=await self.storage_service.get_video_directory(video_id)
             )
             
-            # Translate segments
-            translated_segments = []
-            async for translated_segment in self.translation_service.translate_batch(job):
-                translated_segments.append(translated_segment)
+            # Use sentence reconstruction for better quality translation
+            if hasattr(self.translation_service, 'translate_reconstructed_segments'):
+                logger.info("Using sentence reconstruction for translation", video_id=video_id)
+                translated_segments = await self.translation_service.translate_reconstructed_segments(
+                    segments, target_language
+                )
+            else:
+                # Fallback to original batch translation
+                logger.info("Using original segment translation", video_id=video_id)
+                translated_segments = []
+                async for translated_segment in self.translation_service.translate_batch(job):
+                    translated_segments.append(translated_segment)
             
             logger.info(
                 "Translation completed",

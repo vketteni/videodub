@@ -40,6 +40,11 @@ class AudioProcessingError(PipelineError):
     pass
 
 
+class ProcessingError(PipelineError):
+    """Error during general processing operations."""
+    pass
+
+
 class ValidationError(PipelineError):
     """Error in data validation."""
     pass

@@ -7,6 +7,7 @@ from pathlib import Path
 import structlog
 
 from ..core.exceptions import APIError, RateLimitError, AuthenticationError, QuotaExceededError
+from ..utils.cost_tracking import track_openai_usage, track_tts_usage
 
 
 logger = structlog.get_logger(__name__)
@@ -71,11 +72,21 @@ class OpenAIAdapter:
                 **kwargs
             )
             
+            # Track usage for cost calculation
+            if hasattr(response, 'usage') and response.usage:
+                usage_data = {
+                    'prompt_tokens': response.usage.prompt_tokens,
+                    'completion_tokens': response.usage.completion_tokens,
+                    'total_tokens': response.usage.total_tokens
+                }
+                track_openai_usage(model, usage_data)
+            
             logger.debug(
                 "Chat completion successful",
                 model=model,
                 messages_count=len(messages),
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                usage=usage_data if hasattr(response, 'usage') and response.usage else None
             )
             
             return response
@@ -115,6 +126,9 @@ class OpenAIAdapter:
                 input=text,
                 response_format=response_format
             )
+            
+            # Track TTS usage for cost calculation
+            track_tts_usage(model, len(text))
             
             # Get audio data
             audio_data = response.content

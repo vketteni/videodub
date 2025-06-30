@@ -60,6 +60,7 @@ class TranslationSegment:
     translated_text: str
     audio_path: Optional[Path] = None
     language: Optional[str] = None
+    sentence_context: Optional[Dict] = None
 
     def __post_init__(self) -> None:
         """Validate translation segment."""
@@ -79,6 +80,7 @@ class ProcessingResult:
     errors: List[str] = field(default_factory=list)
     target_language: Optional[str] = None
     tts_engine: Optional[TTSEngine] = None
+    cost_summary: Optional[Dict] = None
 
     def add_error(self, error: str) -> None:
         """Add an error to the result."""
