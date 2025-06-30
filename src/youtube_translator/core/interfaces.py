@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Optional, Tuple, AsyncIterator
+from typing import List, Optional, Tuple, AsyncIterator, Dict
 
 from .models import (
     VideoMetadata,
@@ -325,6 +325,45 @@ class AudioProcessor(ABC):
             
         Returns:
             Path to adjusted audio file
+        """
+        pass
+
+
+class VideoProcessor(ABC):
+    """Abstract interface for video processing and dubbing."""
+
+    @abstractmethod
+    async def create_dubbed_video(
+        self, 
+        original_video_path: Path, 
+        translated_audio_path: Path, 
+        output_path: Path,
+        segments: List[TranslationSegment]
+    ) -> Path:
+        """
+        Create dubbed video by combining original video with translated audio.
+        
+        Args:
+            original_video_path: Path to original video file
+            translated_audio_path: Path to translated audio file
+            output_path: Where to save dubbed video
+            segments: Translation segments with timing info
+            
+        Returns:
+            Path to dubbed video file
+        """
+        pass
+
+    @abstractmethod
+    async def extract_video_metadata(self, video_path: Path) -> Dict:
+        """
+        Extract metadata from video file.
+        
+        Args:
+            video_path: Path to video file
+            
+        Returns:
+            Dictionary with video metadata (duration, resolution, etc.)
         """
         pass
 

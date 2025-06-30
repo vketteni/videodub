@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any, AsyncIterator
 
 import structlog
 
-from .interfaces import VideoScrapingService, TranslationService, TTSService, StorageService
+from .interfaces import VideoScrapingService, TranslationService, TTSService, StorageService, AudioProcessor, VideoProcessor
 from .models import (
     PipelineConfig, ProcessingResult, ProcessingStatus, VideoMetadata,
     TranslationJob, AudioGenerationJob, TTSEngine
@@ -29,6 +29,8 @@ class TranslationPipeline:
         translation_service: TranslationService,
         tts_service: TTSService,
         storage_service: StorageService,
+        audio_processor: AudioProcessor,
+        video_processor: VideoProcessor,
         config: PipelineConfig
     ):
         """
@@ -39,12 +41,16 @@ class TranslationPipeline:
             translation_service: Translation service
             tts_service: Text-to-speech service
             storage_service: Storage service
+            audio_processor: Audio processing service
+            video_processor: Video processing service
             config: Pipeline configuration
         """
         self.video_service = video_service
         self.translation_service = translation_service
         self.tts_service = tts_service
         self.storage_service = storage_service
+        self.audio_processor = audio_processor
+        self.video_processor = video_processor
         self.config = config
         
         logger.info(
@@ -105,10 +111,15 @@ class TranslationPipeline:
                 video_id, translated_segments, self.config.target_language
             )
             
-            # Step 4: Save all data to storage
+            # Step 4: Create dubbed video (optional)
+            dubbed_video_path = await self._create_dubbed_video(
+                video_id, metadata, translated_segments
+            )
+            
+            # Step 5: Save all data to storage
             await self._save_pipeline_data(video_id, metadata, translated_segments, result)
             
-            # Step 5: Capture cost tracking data
+            # Step 6: Capture cost tracking data
             result.cost_summary = get_session_cost_summary()
             
             # Mark as completed
@@ -119,7 +130,8 @@ class TranslationPipeline:
                 video_id=video_id,
                 transcript_segments=len(transcript_segments),
                 translated_segments=len(translated_segments),
-                audio_files=len(audio_files)
+                audio_files=len(audio_files),
+                dubbed_video=str(dubbed_video_path) if dubbed_video_path else "None"
             )
             
         except Exception as e:
@@ -412,11 +424,92 @@ class TranslationPipeline:
                 audio_files=len(audio_files)
             )
             
+            # Combine audio segments into single file
+            if audio_files:
+                combined_audio_path = audio_dir / "translated_audio.wav"
+                logger.info(
+                    "Combining audio segments",
+                    video_id=video_id,
+                    output_path=combined_audio_path
+                )
+                
+                await self.audio_processor.combine_audio_segments(
+                    audio_files=audio_files,
+                    output_path=combined_audio_path,
+                    segments=segments
+                )
+                
+                logger.info(
+                    "Audio combination completed",
+                    video_id=video_id,
+                    combined_file=combined_audio_path
+                )
+            
             return audio_files
             
         except Exception as e:
             logger.error("Audio generation failed", video_id=video_id, error=str(e))
             raise TTSError(f"Failed to generate audio: {str(e)}")
+    
+    async def _create_dubbed_video(
+        self, 
+        video_id: str, 
+        metadata: VideoMetadata, 
+        segments: List
+    ) -> Optional[Path]:
+        """Create dubbed video by combining original video with translated audio."""
+        try:
+            logger.info(
+                "Starting video dubbing",
+                video_id=video_id,
+                segments=len(segments)
+            )
+            
+            # Get video directories
+            video_dir = await self.storage_service.get_video_directory(video_id)
+            audio_dir = video_dir / "translated_audio"
+            
+            # Check if combined audio exists
+            combined_audio_path = audio_dir / "translated_audio.wav"
+            if not combined_audio_path.exists():
+                logger.warning(f"Combined audio not found: {combined_audio_path}")
+                return None
+            
+            # Find original video file from scraping
+            scraped_dir = self.config.output_directory / "scraped" / video_id
+            video_files = list(scraped_dir.glob("*.mp4")) + list(scraped_dir.glob("*.mkv")) + list(scraped_dir.glob("*.webm"))
+            
+            if not video_files:
+                logger.warning(f"No video files found in {scraped_dir}")
+                return None
+            
+            original_video_path = video_files[0]  # Take first video file
+            logger.info(f"Using original video: {original_video_path}")
+            
+            # Create output path for dubbed video
+            dubbed_video_path = video_dir / f"dubbed_video_{self.config.target_language}.mp4"
+            
+            # Create dubbed video
+            result_path = await self.video_processor.create_dubbed_video(
+                original_video_path=original_video_path,
+                translated_audio_path=combined_audio_path,
+                output_path=dubbed_video_path,
+                segments=segments
+            )
+            
+            logger.info(
+                "Video dubbing completed",
+                video_id=video_id,
+                output_path=result_path
+            )
+            
+            return result_path
+            
+        except Exception as e:
+            logger.error("Video dubbing failed", video_id=video_id, error=str(e))
+            # Don't fail the entire pipeline for video dubbing errors
+            logger.warning("Continuing without dubbed video due to error")
+            return None
     
     async def _save_pipeline_data(
         self, 
@@ -442,6 +535,11 @@ class TranslationPipeline:
             audio_dir = video_dir / "translated_audio"
             if audio_dir.exists():
                 result.files["audio_directory"] = str(audio_dir)
+            
+            # Add dubbed video to files if it exists
+            dubbed_video_path = video_dir / f"dubbed_video_{self.config.target_language}.mp4"
+            if dubbed_video_path.exists():
+                result.files["dubbed_video"] = str(dubbed_video_path)
             
             logger.debug("Pipeline data saved", video_id=video_id)
             

@@ -49,6 +49,8 @@ from .services.video_scraper import YouTubeScrapingService
 from .services.translator import OpenAITranslationService, FallbackTranslationService
 from .services.tts import OpenAITTSService, SystemTTSService, create_tts_service
 from .services.storage import FileStorageService
+from .services.audio_processor import create_audio_processor
+from .services.video_processor import create_video_processor
 
 # Utilities
 from .utils.logging import configure_logging, get_logger, setup_pipeline_logging
@@ -114,11 +116,19 @@ def create_pipeline(
     # Storage service
     storage_service = FileStorageService(config.output_directory)
     
+    # Audio processor
+    audio_processor = create_audio_processor()
+    
+    # Video processor
+    video_processor = create_video_processor()
+    
     return TranslationPipeline(
         video_service=video_service,
         translation_service=translation_service,
         tts_service=tts_service,
         storage_service=storage_service,
+        audio_processor=audio_processor,
+        video_processor=video_processor,
         config=config
     )
 
@@ -186,6 +196,8 @@ __all__ = [
     "SystemTTSService",
     "create_tts_service",
     "FileStorageService",
+    "create_audio_processor",
+    "create_video_processor",
     
     # Utilities
     "configure_logging",
