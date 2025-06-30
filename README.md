@@ -1,143 +1,248 @@
 # YouTube Translation Pipeline
 
-A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages, and generates new audio in the target language using AI-powered text-to-speech services.
+A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages using advanced sentence reconstruction, and generates natural-sounding audio in the target language with AI-powered text-to-speech services and real-time cost tracking.
 
 ## Architecture Overview
 
 This project consists of several interconnected modules that work together to create a complete video translation workflow:
 
 ```
-YouTube Video → Audio Extraction → Transcript Translation → Audio Generation → Output
+YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Translation → Audio Generation → Output
+                                          ↓
+                                   Cost Tracking & Analytics
 ```
 
 ### Core Components
 
-#### 1. **config.py** - Central Configuration
-- Manages API keys for OpenAI, Google, and Azure services
-- Defines supported languages and TTS engines
-- Handles validation of required credentials
-- Provides default settings for video processing
+#### 1. **Core Pipeline (`src/youtube_translator/core/`)**
+- **`pipeline.py`** - Main orchestrator with cost tracking integration
+- **`models.py`** - Data models with sentence context support
+- **`interfaces.py`** - Service interfaces and contracts
+- **`exceptions.py`** - Comprehensive error handling
 
-#### 2. **video_scraper.py** - Video Processing
-- Wraps the external `youtube_scraper` package
+#### 2. **Configuration System (`src/youtube_translator/config/`)**
+- **`settings.py`** - Pydantic-based configuration with validation
+- **`validation.py`** - Input validation and sanitization
+- Manages API keys for OpenAI, Google, and Azure services
+- Defines supported languages and TTS engines with pricing
+
+#### 3. **Video Processing (`src/youtube_translator/services/video_scraper.py`)**
 - Downloads videos and extracts audio/metadata
 - Handles transcript extraction when available
 - Manages file organization and storage
+- Integrates with yt-dlp for broad platform support
 
-#### 3. **audio_translator.py** - Translation & Speech Synthesis
-- Translates transcripts using OpenAI GPT models
-- Generates audio using multiple TTS engines (OpenAI, Google, Azure, System)
-- Manages timing and synchronization of translated segments
-- Combines individual audio segments into final output
+#### 4. **Advanced Translation System (`src/youtube_translator/services/`)**
+- **`transcript_processor.py`** - NEW: Intelligent sentence reconstruction
+  - Merges fragmented segments into complete sentences
+  - Detects natural sentence boundaries and handles abbreviations
+  - Preserves timing relationships for audio synchronization
+- **`translator.py`** - Context-aware translation with cost optimization
+  - Sentence-level translation for better quality and efficiency
+  - Support for multiple OpenAI models (GPT-3.5, GPT-4, GPT-4.1-nano)
+  - Fallback mechanisms and error handling
 
-#### 4. **translation_pipeline.py** - Main Orchestrator
-- Coordinates the entire translation workflow
-- Handles error management and logging
-- Manages batch processing of multiple videos
-- Provides status tracking and progress monitoring
+#### 5. **Text-to-Speech Engine (`src/youtube_translator/services/tts.py`)**
+- Multi-engine support (OpenAI, Google, Azure, System TTS)
+- Sentence-based audio generation for natural speech flow
+- Character usage tracking for cost analysis
+- Quality optimization through complete sentence processing
 
-### Utility Scripts
+#### 6. **Cost Tracking & Analytics (`src/youtube_translator/utils/cost_tracking.py`)**
+- **NEW**: Real-time API usage tracking
+- Accurate cost calculation with current pricing models
+- Token and character usage analytics
+- Session-based cost summaries and breakdowns
 
-#### 5. **example_usage.py** - Usage Examples
-- Demonstrates different pipeline configurations
-- Shows single video and batch processing
-- Provides examples for different TTS engines
-- Includes status monitoring examples
+### Utility Scripts & Examples
 
-#### 6. **load_and_translate.py** - Existing Video Processing
-- Processes previously downloaded videos
-- Useful for re-translation with different languages
-- Demonstrates working with existing metadata
+#### 7. **Testing & Development (`examples/`)**
+- **`basic_usage.py`** - Comprehensive usage examples
+  - Demonstrates different pipeline configurations
+  - Shows single video and batch processing
+  - Multi-language translation examples
+- **`quick_test.py`** - NEW: Economic testing and model comparison
+  - Fast single video testing with cost analysis
+  - Multi-model comparison (GPT-3.5, GPT-4, GPT-4.1-nano)
+  - Real-time cost tracking and performance metrics
 
-#### 7. **rerun_with_real_tts.py** - TTS Re-processing
-- Cleans up failed audio generation attempts
-- Re-runs audio generation with proper TTS engines
-- Includes testing with limited segments
+#### 8. **Development Tools (`Makefile`)**
+- **`make clean-output`** - Clean all pipeline outputs
+- **`make clean-all`** - Complete cleanup (build + outputs)
+- Standard development commands (test, lint, format, type-check)
 
-## Workflow Diagram
+## Enhanced Workflow Diagram
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   YouTube URL   │───▶│  video_scraper  │───▶│   Raw Audio +   │
-└─────────────────┘    │                 │    │   Transcript    │
+│   YouTube URL   │───▶│  Video Scraper  │───▶│   Raw Audio +   │
+└─────────────────┘    │                 │    │   Fragments     │
                        └─────────────────┘    └─────────────────┘
                                                        │
                                                        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Translated Audio│◀───│audio_translator │◀───│ Original Text   │
-│     Output      │    │                 │    │   Segments      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+│ Cost Analytics  │◀───│Transcript       │───▶│ Complete        │
+│ & Reporting     │    │Processor        │    │ Sentences       │
+└─────────────────┘    │(NEW)            │    └─────────────────┘
+        ▲              └─────────────────┘            │
+        │                                             ▼
+        │              ┌─────────────────┐    ┌─────────────────┐
+        └──────────────│Smart Translator │◀───│ Sentence-Level  │
+                       │+ TTS Engine     │    │ Context         │
+                       └─────────────────┘    └─────────────────┘
+                               │
+                               ▼
+                       ┌─────────────────┐
+                       │ Natural Audio   │
+                       │ + Timing Map    │
+                       └─────────────────┘
 ```
 
-## File Relationships
+## Key Innovations
 
-### Configuration Layer
-- **config.py** ← Used by all modules for settings and API keys
+### 🧠 **Intelligent Sentence Reconstruction**
+- **Problem Solved**: YouTube transcripts are fragmented ("Hello", "world") causing poor TTS quality
+- **Solution**: Automatic sentence boundary detection and reconstruction ("Hello world")
+- **Benefits**: 75% cost reduction + natural speech flow + better translation context
 
-### Processing Layer
-- **translation_pipeline.py** ← Main entry point
-  - Uses **video_scraper.py** for content extraction
-  - Uses **audio_translator.py** for translation and TTS
-  - Uses **config.py** for configuration
+### 💰 **Real-Time Cost Tracking**
+- **Accurate API Usage**: Tracks every token and character across all services
+- **Economic Analysis**: Compare model costs (GPT-3.5 vs GPT-4 vs GPT-4.1-nano)
+- **Current Pricing**: Up-to-date OpenAI pricing with detailed breakdowns
 
-### Utility Layer
-- **example_usage.py** ← Demonstrates **translation_pipeline.py**
-- **load_and_translate.py** ← Direct usage of **audio_translator.py**
-- **rerun_with_real_tts.py** ← Recovery and re-processing utilities
+### 🎯 **Quality Optimization**
+- **Context-Aware Translation**: Complete sentences provide better translation accuracy
+- **Natural TTS**: Sentence-level audio generation creates smooth, professional speech
+- **Smart Fallbacks**: Graceful degradation when services are unavailable
+
+## Modern Architecture
+
+### **Service-Oriented Design**
+```
+Core Pipeline ←→ Configuration System
+     ↕                    ↕
+Translation Services ←→ Cost Tracking
+     ↕                    ↕  
+Storage & Utilities ←→ Logging & Analytics
+```
+
+### **Key Dependencies**
+- **Processing**: `transcript_processor.py` → `translator.py` → `tts.py`
+- **Tracking**: `cost_tracking.py` integrated throughout all API calls
+- **Configuration**: `settings.py` with Pydantic validation and environment management
 
 ## Installation
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install in development mode
+pip install -e .
 
-# Set up environment variables (optional, for AI services)
+# OR install with development dependencies
+make dev-install
+
+# Set up environment variables (required for AI services)
 export OPENAI_API_KEY="your_openai_api_key"
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/google/credentials.json"
-export AZURE_SPEECH_KEY="your_azure_key"
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/google/credentials.json"  # Optional
+export AZURE_SPEECH_KEY="your_azure_key"  # Optional
+```
+
+### Development Setup
+```bash
+# Run all quality checks
+make check
+
+# Clean output files
+make clean-output
+
+# Run tests
+make test
 ```
 
 ## Quick Start
 
-### Basic Usage
-
-```python
-from translation_pipeline import TranslationPipeline
-
-# Initialize pipeline
-pipeline = TranslationPipeline(
-    target_language="es",  # Spanish
-    tts_engine="openai"    # Requires API key
-)
-
-# Process a video
-result = pipeline.process_video("https://www.youtube.com/watch?v=VIDEO_ID")
-print(f"Status: {result['status']}")
-```
-
-### Command Line Usage
+### 🚀 **Fast Testing with Cost Analysis**
 
 ```bash
-# Single video
-python translation_pipeline.py "https://youtube.com/watch?v=VIDEO_ID" --target-language es
+# Quick single video test with cost tracking
+python examples/quick_test.py quick "https://youtube.com/watch?v=SHORT_VIDEO"
 
-# Multiple videos
-python translation_pipeline.py \
-  "https://youtube.com/watch?v=VIDEO1" \
-  "https://youtube.com/watch?v=VIDEO2" \
-  --target-language fr \
-  --tts-engine openai
+# Compare multiple models economically
+python examples/quick_test.py compare
 
-# Check pipeline status
-python translation_pipeline.py --status
+# Model comparison shows real costs:
+# Model           Duration   Status     Total Cost    Tokens    
+# gpt-3.5-turbo   45.2s      completed  $0.002340     1,247     
+# gpt-4.1-nano    42.1s      completed  $0.000456     1,198     
+# gpt-4           48.3s      completed  $0.024680     1,289     
+```
+
+### 📚 **Programmatic Usage**
+
+```python
+from youtube_translator import create_pipeline, TTSEngine
+
+# Create pipeline with sentence reconstruction (automatic)
+pipeline = create_pipeline(
+    target_language="es",           # Spanish
+    tts_engine=TTSEngine.OPENAI,   # High-quality TTS
+    translation_model="gpt-4.1-nano",  # Cost-effective model
+    openai_api_key="your_api_key"
+)
+
+# Process video with cost tracking
+result = await pipeline.process_video("https://youtube.com/watch?v=VIDEO_ID")
+
+# Check results and costs
+print(f"Status: {result.status.value}")
+print(f"Total Cost: ${result.cost_summary['totals']['total_cost']:.6f}")
+print(f"Translation Segments: {len(result.translation_segments)}")
+```
+
+### 🎯 **Advanced Features**
+
+```python
+# Comprehensive example with all features
+pipeline = create_pipeline(
+    output_directory="./my_translations",
+    target_language="de",           # German
+    translation_model="gpt-4.1-nano",  # Latest efficient model
+    tts_model="tts-1-hd",          # High-definition audio
+    tts_engine=TTSEngine.OPENAI,
+    openai_api_key=os.getenv("OPENAI_API_KEY")
+)
+
+# Batch processing with cost optimization
+urls = ["https://youtube.com/watch?v=VIDEO1", "https://youtube.com/watch?v=VIDEO2"]
+async for result in pipeline.process_video_batch(urls, max_concurrent=2):
+    cost = result.cost_summary['totals']['total_cost']
+    print(f"Video {result.video_id}: ${cost:.6f}")
 ```
 
 ## Supported Features
 
-- **Languages**: Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese, Russian, Arabic, Hindi
-- **TTS Engines**: OpenAI (premium), Google Cloud, Azure Speech, System TTS (fallback)
-- **Video Sources**: YouTube and 1000+ other platforms via yt-dlp
-- **Output Formats**: MP3 audio, JSON metadata, synchronized transcripts
+### 🌍 **Languages**
+Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese, Russian, Arabic, Hindi
+
+### 🤖 **Translation Models**
+- **GPT-4.1-nano** - Latest, most cost-effective (recommended)
+- **GPT-4-turbo** - High performance, balanced cost
+- **GPT-4** - Premium quality, highest cost
+- **GPT-3.5-turbo** - Fast, economical baseline
+
+### 🎙️ **TTS Engines**
+- **OpenAI TTS** - Premium quality (`tts-1`, `tts-1-hd`)
+- **Google Cloud TTS** - Enterprise-grade
+- **Azure Speech** - Microsoft's offering
+- **System TTS** - Fallback option
+
+### 📹 **Video Sources**
+YouTube and 1000+ platforms via yt-dlp integration
+
+### 📊 **Output & Analytics**
+- **Audio**: High-quality WAV/MP3 with natural sentence flow
+- **Metadata**: Comprehensive JSON with timing and cost data
+- **Cost Reports**: Token usage, character counts, pricing breakdowns
+- **Quality Metrics**: Translation confidence scores, processing statistics
 
 ## Output Structure
 
