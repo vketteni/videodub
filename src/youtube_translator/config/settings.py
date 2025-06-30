@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-from pydantic import BaseSettings, Field, validator
-from pydantic_settings import SettingsConfigDict
+from pydantic import Field, validator
+from pydantic_settings import SettingsConfigDict, BaseSettings
 
 from ..core.models import TTSEngine
 from ..core.exceptions import ConfigurationError

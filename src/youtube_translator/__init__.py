@@ -59,6 +59,8 @@ def create_pipeline(
     target_language: str = "es",
     tts_engine: TTSEngine = TTSEngine.OPENAI,
     openai_api_key: str = None,
+    translation_model: str = "gpt-4.1-nano",
+    tts_model: str = "tts-1",
     **kwargs
 ) -> TranslationPipeline:
     """
@@ -69,6 +71,8 @@ def create_pipeline(
         target_language: Target language code
         tts_engine: TTS engine to use
         openai_api_key: OpenAI API key (required for OpenAI services)
+        translation_model: OpenAI model for translation (e.g., gpt-4.1-nano, gpt-4)
+        tts_model: OpenAI model for TTS (e.g., tts-1, tts-1-hd)
         **kwargs: Additional configuration options
         
     Returns:
@@ -95,7 +99,7 @@ def create_pipeline(
     
     # Translation service
     if openai_api_key:
-        translation_service = OpenAITranslationService(openai_api_key)
+        translation_service = OpenAITranslationService(openai_api_key, model=translation_model)
     else:
         translation_service = FallbackTranslationService()
     
@@ -103,7 +107,7 @@ def create_pipeline(
     if tts_engine == TTSEngine.OPENAI:
         if not openai_api_key:
             raise ConfigurationError("OpenAI API key required for OpenAI TTS")
-        tts_service = create_tts_service(tts_engine, api_key=openai_api_key)
+        tts_service = create_tts_service(tts_engine, api_key=openai_api_key, model=tts_model)
     else:
         tts_service = create_tts_service(tts_engine)
     
