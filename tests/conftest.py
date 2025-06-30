@@ -8,7 +8,7 @@ from unittest.mock import Mock, AsyncMock
 
 import pytest
 
-from youtube_translator import (
+from videodub import (
     PipelineConfig,
     VideoMetadata,
     TranscriptSegment,

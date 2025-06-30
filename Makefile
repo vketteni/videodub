@@ -25,7 +25,7 @@ dev-install:
 
 # Testing
 test:
-	pytest tests/ -v --cov=src/youtube_translator --cov-report=term-missing --cov-report=html
+	pytest tests/ -v --cov=src/videodub --cov-report=term-missing --cov-report=html
 
 test-fast:
 	pytest tests/unit/ -v
@@ -47,7 +47,7 @@ format-check:
 	isort --check-only src/ tests/ examples/ scripts/
 
 type-check:
-	mypy src/youtube_translator
+	mypy src/videodub
 
 # Development
 dev: dev-install lint type-check test
@@ -98,10 +98,10 @@ docs:
 
 # Docker (for future use)
 docker-build:
-	docker build -t youtube-translator .
+	docker build -t videodub .
 
 docker-run:
-	docker run -it --rm youtube-translator
+	docker run -it --rm videodub
 
 # Environment setup
 env-create:

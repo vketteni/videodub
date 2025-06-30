@@ -6,8 +6,8 @@ import os
 import time
 from pathlib import Path
 
-from youtube_translator import create_pipeline, TTSEngine, configure_logging
-from youtube_translator.utils.cost_tracking import get_session_cost_summary, reset_global_cost_tracker
+from videodub import create_pipeline, TTSEngine, configure_logging
+from videodub.utils.cost_tracking import get_session_cost_summary, reset_global_cost_tracker
 
 
 async def quick_translation_test(

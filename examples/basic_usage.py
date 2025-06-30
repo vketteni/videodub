@@ -5,7 +5,7 @@ import asyncio
 import os
 from pathlib import Path
 
-from youtube_translator import (
+from videodub import (
     create_pipeline,
     create_simple_pipeline,
     TTSEngine,

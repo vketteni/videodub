@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "youtube-translation-pipeline"
+name = "videodub"
 version = "1.0.0"
-description = "AI-powered YouTube video translation pipeline"
+description = "AI-powered video translation and dubbing pipeline"
 authors = [{name = "Vincent", email = "vincent@example.com"}]
 readme = "README.md"
 license = {text = "MIT"}
@@ -45,7 +45,7 @@ dev = [
 ]
 
 [project.scripts]
-youtube-translator = "youtube_translator.cli:main"
+videodub = "videodub.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -90,7 +90,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/youtube_translator"]
+source = ["src/videodub"]
 branch = true
 
 [tool.coverage.report]

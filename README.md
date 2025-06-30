@@ -1,4 +1,4 @@
-# YouTube Translation Pipeline
+# VideoDub - AI Video Translation Pipeline
 
 A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages using advanced sentence reconstruction, generates natural-sounding audio in the target language with AI-powered text-to-speech services, and creates fully dubbed videos with real-time cost tracking.
 
@@ -14,25 +14,25 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
 
 ### Core Components
 
-#### 1. **Core Pipeline (`src/youtube_translator/core/`)**
+#### 1. **Core Pipeline (`src/videodub/core/`)**
 - **`pipeline.py`** - Main orchestrator with cost tracking integration
 - **`models.py`** - Data models with sentence context support
 - **`interfaces.py`** - Service interfaces and contracts
 - **`exceptions.py`** - Comprehensive error handling
 
-#### 2. **Configuration System (`src/youtube_translator/config/`)**
+#### 2. **Configuration System (`src/videodub/config/`)**
 - **`settings.py`** - Pydantic-based configuration with validation
 - **`validation.py`** - Input validation and sanitization
 - Manages API keys for OpenAI, Google, and Azure services
 - Defines supported languages and TTS engines with pricing
 
-#### 3. **Video Processing (`src/youtube_translator/services/video_scraper.py`)**
+#### 3. **Video Processing (`src/videodub/services/video_scraper.py`)**
 - Downloads videos and extracts audio/metadata
 - Handles transcript extraction when available
 - Manages file organization and storage
 - Integrates with yt-dlp for broad platform support
 
-#### 4. **Advanced Translation System (`src/youtube_translator/services/`)**
+#### 4. **Advanced Translation System (`src/videodub/services/`)**
 - **`transcript_processor.py`** - NEW: Intelligent sentence reconstruction
   - Merges fragmented segments into complete sentences
   - Detects natural sentence boundaries and handles abbreviations
@@ -42,19 +42,19 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
   - Support for multiple OpenAI models (GPT-3.5, GPT-4, GPT-4.1-nano)
   - Fallback mechanisms and error handling
 
-#### 5. **Text-to-Speech Engine (`src/youtube_translator/services/tts.py`)**
+#### 5. **Text-to-Speech Engine (`src/videodub/services/tts.py`)**
 - Multi-engine support (OpenAI, Google, Azure, System TTS)
 - Sentence-based audio generation for natural speech flow
 - Character usage tracking for cost analysis
 - Quality optimization through complete sentence processing
 
-#### 6. **Video Processing Engine (`src/youtube_translator/services/video_processor.py`)**
+#### 6. **Video Processing Engine (`src/videodub/services/video_processor.py`)**
 - **NEW**: FFmpeg-based video dubbing with audio replacement
 - Lossless video quality preservation during audio track replacement
 - Complete video metadata extraction (duration, resolution, codecs)
 - Graceful fallback handling for video processing errors
 
-#### 7. **Cost Tracking & Analytics (`src/youtube_translator/utils/cost_tracking.py`)**
+#### 7. **Cost Tracking & Analytics (`src/videodub/utils/cost_tracking.py`)**
 - **NEW**: Real-time API usage tracking
 - Accurate cost calculation with current pricing models
 - Token and character usage analytics
@@ -196,7 +196,7 @@ python examples/quick_test.py compare
 ### 📚 **Programmatic Usage**
 
 ```python
-from youtube_translator import create_pipeline, TTSEngine
+from videodub import create_pipeline, TTSEngine
 
 # Create pipeline with sentence reconstruction (automatic)
 pipeline = create_pipeline(

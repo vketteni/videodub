@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 
-from youtube_translator.core.models import (
+from videodub.core.models import (
     VideoMetadata,
     TranscriptSegment,
     TranslationSegment,
@@ -15,7 +15,7 @@ from youtube_translator.core.models import (
     TranslationJob,
     AudioGenerationJob,
 )
-from youtube_translator.core.exceptions import ValidationError
+from videodub.core.exceptions import ValidationError
 
 
 class TestVideoMetadata:
