@@ -1,13 +1,13 @@
 # YouTube Translation Pipeline
 
-A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages using advanced sentence reconstruction, and generates natural-sounding audio in the target language with AI-powered text-to-speech services and real-time cost tracking.
+A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages using advanced sentence reconstruction, generates natural-sounding audio in the target language with AI-powered text-to-speech services, and creates fully dubbed videos with real-time cost tracking.
 
 ## Architecture Overview
 
 This project consists of several interconnected modules that work together to create a complete video translation workflow:
 
 ```
-YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Translation → Audio Generation → Output
+YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Translation → Audio Generation → Video Dubbing → Output
                                           ↓
                                    Cost Tracking & Analytics
 ```
@@ -48,7 +48,13 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
 - Character usage tracking for cost analysis
 - Quality optimization through complete sentence processing
 
-#### 6. **Cost Tracking & Analytics (`src/youtube_translator/utils/cost_tracking.py`)**
+#### 6. **Video Processing Engine (`src/youtube_translator/services/video_processor.py`)**
+- **NEW**: FFmpeg-based video dubbing with audio replacement
+- Lossless video quality preservation during audio track replacement
+- Complete video metadata extraction (duration, resolution, codecs)
+- Graceful fallback handling for video processing errors
+
+#### 7. **Cost Tracking & Analytics (`src/youtube_translator/utils/cost_tracking.py`)**
 - **NEW**: Real-time API usage tracking
 - Accurate cost calculation with current pricing models
 - Token and character usage analytics
@@ -56,7 +62,7 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
 
 ### Utility Scripts & Examples
 
-#### 7. **Testing & Development (`examples/`)**
+#### 8. **Testing & Development (`examples/`)**
 - **`basic_usage.py`** - Comprehensive usage examples
   - Demonstrates different pipeline configurations
   - Shows single video and batch processing
@@ -66,7 +72,7 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
   - Multi-model comparison (GPT-3.5, GPT-4, GPT-4.1-nano)
   - Real-time cost tracking and performance metrics
 
-#### 8. **Development Tools (`Makefile`)**
+#### 9. **Development Tools (`Makefile`)**
 - **`make clean-output`** - Clean all pipeline outputs
 - **`make clean-all`** - Complete cleanup (build + outputs)
 - Standard development commands (test, lint, format, type-check)
@@ -75,15 +81,15 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   YouTube URL   │───▶│  Video Scraper  │───▶│   Raw Audio +   │
-└─────────────────┘    │                 │    │   Fragments     │
+│   YouTube URL   │───▶│  Video Scraper  │───▶│ Raw Video +     │
+└─────────────────┘    │                 │    │ Audio Fragments │
                        └─────────────────┘    └─────────────────┘
                                                        │
                                                        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │ Cost Analytics  │◀───│Transcript       │───▶│ Complete        │
 │ & Reporting     │    │Processor        │    │ Sentences       │
-└─────────────────┘    │(NEW)            │    └─────────────────┘
+└─────────────────┘    │                 │    └─────────────────┘
         ▲              └─────────────────┘            │
         │                                             ▼
         │              ┌─────────────────┐    ┌─────────────────┐
@@ -92,10 +98,16 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
                        └─────────────────┘    └─────────────────┘
                                │
                                ▼
-                       ┌─────────────────┐
-                       │ Natural Audio   │
-                       │ + Timing Map    │
-                       └─────────────────┘
+                       ┌─────────────────┐    ┌─────────────────┐
+                       │ Audio Processor │───▶│Video Processor  │
+                       │+ Audio Files    │    │+ Dubbing (NEW)  │
+                       └─────────────────┘    └─────────────────┘
+                                                       │
+                                                       ▼
+                                              ┌─────────────────┐
+                                              │ Dubbed Video +  │
+                                              │ Audio Files     │
+                                              └─────────────────┘
 ```
 
 ## Key Innovations
@@ -114,6 +126,11 @@ YouTube Video → Audio Extraction → Sentence Reconstruction → Smart Transla
 - **Context-Aware Translation**: Complete sentences provide better translation accuracy
 - **Natural TTS**: Sentence-level audio generation creates smooth, professional speech
 - **Smart Fallbacks**: Graceful degradation when services are unavailable
+
+### 🎬 **Complete Video Dubbing**
+- **Automatic Video Dubbing**: Seamless integration of translated audio with original video
+- **Quality Preservation**: Video streams copied without re-encoding for maximum quality
+- **Professional Output**: H.264/AAC dubbed videos ready for distribution
 
 ## Modern Architecture
 
@@ -240,6 +257,7 @@ YouTube and 1000+ platforms via yt-dlp integration
 
 ### 📊 **Output & Analytics**
 - **Audio**: High-quality WAV/MP3 with natural sentence flow
+- **Video**: Professional dubbed videos with translated audio tracks
 - **Metadata**: Comprehensive JSON with timing and cost data
 - **Cost Reports**: Token usage, character counts, pricing breakdowns
 - **Quality Metrics**: Translation confidence scores, processing statistics
@@ -255,6 +273,7 @@ pipeline_output/
 │   │   ├── segment_0001.wav
 │   │   ├── segment_0002.wav
 │   │   └── translated_audio.wav # Combined final audio
+│   ├── dubbed_video_{LANG}.mp4 # Final dubbed video (NEW!)
 │   └── pipeline_result.json    # Processing summary
 ```
 
@@ -265,7 +284,7 @@ The project relies on several key external services and packages:
 - **youtube_scraper**: External package for video downloading
 - **OpenAI API**: Translation and high-quality TTS
 - **yt-dlp**: Underlying video extraction technology
-- **ffmpeg**: Audio processing and manipulation
+- **ffmpeg**: Audio processing, manipulation, and video dubbing
 
 ## Error Handling
 
