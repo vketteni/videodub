@@ -17,44 +17,43 @@ help:
 
 # Installation
 install:
-	pip install -e .
+	poetry install --only main
 
 dev-install:
-	pip install -e ".[dev]"
-	pip install -r requirements/dev.txt
+	poetry install
 
 # Testing
 test:
-	pytest tests/ -v --cov=src/videodub --cov-report=term-missing --cov-report=html
+	poetry run pytest tests/ -v --cov=src/videodub --cov-report=term-missing --cov-report=html
 
 test-fast:
-	pytest tests/unit/ -v
+	poetry run pytest tests/unit/ -v
 
 test-integration:
-	pytest tests/integration/ -v
+	poetry run pytest tests/integration/ -v
 
 # Code quality
 lint:
-	ruff check src/ tests/
-	ruff check examples/ scripts/
+	poetry run ruff check src/ tests/
+	poetry run ruff check examples/ scripts/
 
 format:
-	black src/ tests/ examples/ scripts/
-	isort src/ tests/ examples/ scripts/
+	poetry run black src/ tests/ examples/ scripts/
+	poetry run isort src/ tests/ examples/ scripts/
 
 format-check:
-	black --check src/ tests/ examples/ scripts/
-	isort --check-only src/ tests/ examples/ scripts/
+	poetry run black --check src/ tests/ examples/ scripts/
+	poetry run isort --check-only src/ tests/ examples/ scripts/
 
 type-check:
-	mypy src/videodub
+	poetry run mypy src/videodub
 
 # Development
 dev: dev-install lint type-check test
 
 # Building
 build:
-	python -m build
+	poetry build
 
 clean:
 	@echo "🧹 Cleaning build artifacts..."
@@ -105,11 +104,12 @@ docker-run:
 
 # Environment setup
 env-create:
-	python -m venv venv
-	@echo "Activate with: source venv/bin/activate (Linux/Mac) or venv\\Scripts\\activate (Windows)"
+	@echo "Poetry manages virtual environments automatically"
+	@echo "To activate: poetry shell"
+	@echo "To run commands: poetry run <command>"
 
 env-requirements:
-	pip freeze > requirements/current.txt
+	poetry export -f requirements.txt --output requirements/current.txt
 
 # Health checks
 health-check:
