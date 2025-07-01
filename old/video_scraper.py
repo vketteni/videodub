@@ -3,7 +3,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-from youtube_scraper import VideoScraperAPI, scrape_audio_only
+from video_scraper import VideoScraperAPI, scrape_audio_only
 
 class VideoProcessor:
     def __init__(self, output_dir: str = "./downloads", audio_format: str = "mp3"):

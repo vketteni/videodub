@@ -17,7 +17,7 @@ logger = structlog.get_logger(__name__)
 
 
 class YouTubeScrapingService(VideoScrapingService):
-    """YouTube video scraping service using youtube_scraper package."""
+    """YouTube video scraping service using video_scraper package."""
     
     def __init__(self, output_dir: Path, audio_format: str = "mp3"):
         """
@@ -35,7 +35,7 @@ class YouTubeScrapingService(VideoScrapingService):
     def _setup_scraper(self) -> None:
         """Set up the underlying video scraper."""
         try:
-            from youtube_scraper import VideoScraperAPI, scrape_audio_only
+            from video_scraper import VideoScraperAPI, scrape_audio_only
             self.scraper = VideoScraperAPI(
                 output_dir=str(self.output_dir),
                 extract_audio=True
@@ -44,7 +44,7 @@ class YouTubeScrapingService(VideoScrapingService):
             logger.info("Video scraper initialized", output_dir=str(self.output_dir))
         except ImportError as e:
             raise VideoScrapingError(
-                "youtube_scraper package not available",
+                "video_scraper package not available",
                 details={"error": str(e)}
             )
     
