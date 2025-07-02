@@ -361,19 +361,11 @@ class TranslationPipeline:
                 output_directory=await self.storage_service.get_video_directory(video_id)
             )
             
-            # Use sentence reconstruction for better quality translation
-            if hasattr(self.translation_service, 'translate_reconstructed_segments'):
-                logger.info("Using sentence reconstruction for translation", video_id=video_id)
-                translated_segments = await self.translation_service.translate_reconstructed_segments(
-                    segments, target_language
-                )
-            else:
-                # Fallback to original batch translation
-                logger.info("Using original segment translation", video_id=video_id)
-                translated_segments = []
-                async for translated_segment in self.translation_service.translate_batch(job):
-                    translated_segments.append(translated_segment)
-            
+            # Translate segments
+            translated_segments = []
+            async for translated_segment in self.translation_service.translate_batch(job):
+                translated_segments.append(translated_segment)
+
             logger.info(
                 "Translation completed",
                 video_id=video_id,
