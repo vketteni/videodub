@@ -133,7 +133,7 @@ class HybridTranscriptProcessingService(TranscriptProcessingService):
 
         # Step 3: Fix punctuation and capitalization
         processed_segments = []
-        for merged_group in merged_segments:
+        for sequence_num, (merged_group, original_indices) in enumerate(merged_segments):
             processed_text = self._fix_punctuation_and_capitalization(merged_group)
 
             # Create ProcessedSegment
@@ -141,6 +141,8 @@ class HybridTranscriptProcessingService(TranscriptProcessingService):
                 merged_segments=merged_group,
                 processed_text=processed_text,
                 processing_mode=ProcessingMode.RULE_BASED,
+                sequence_number=sequence_num,
+                original_indices=original_indices,
                 is_sentence_complete=self._is_sentence_complete(processed_text),
                 context_quality_score=self._calculate_quality_score(processed_text, merged_group),
                 timing_preserved=True,
@@ -185,6 +187,8 @@ class HybridTranscriptProcessingService(TranscriptProcessingService):
                 merged_segments=segment.merged_segments,
                 processed_text=enhanced_text,
                 processing_mode=mode,
+                sequence_number=segment.sequence_number,
+                original_indices=segment.original_indices,
                 is_sentence_complete=self._is_sentence_complete(enhanced_text),
                 context_quality_score=min(1.0, (segment.context_quality_score or 0.5) + 0.2),
                 timing_preserved=segment.timing_preserved,
@@ -217,15 +221,16 @@ class HybridTranscriptProcessingService(TranscriptProcessingService):
 
         return cleaned
 
-    def _merge_short_segments(self, segments: list[TranscriptSegment]) -> list[list[TranscriptSegment]]:
+    def _merge_short_segments(self, segments: list[TranscriptSegment]) -> list[tuple[list[TranscriptSegment], list[int]]]:
         """Merge short adjacent segments into groups, ensuring quality thresholds."""
         if not segments:
             return []
 
         merged_groups = []
         current_group = [segments[0]]
+        current_indices = [0]
 
-        for segment in segments[1:]:
+        for i, segment in enumerate(segments[1:], 1):
             prev_segment = current_group[-1]
 
             # Check if segments should be merged
@@ -249,17 +254,19 @@ class HybridTranscriptProcessingService(TranscriptProcessingService):
 
             if should_merge:
                 current_group.append(segment)
+                current_indices.append(i)
             else:
-                merged_groups.append(current_group)
+                merged_groups.append((current_group, current_indices))
                 current_group = [segment]
+                current_indices = [i]
 
         # Add the last group
         if current_group:
-            merged_groups.append(current_group)
+            merged_groups.append((current_group, current_indices))
 
         # Final pass: merge any remaining groups that don't meet thresholds
         final_groups = []
-        for group in merged_groups:
+        for group, indices in merged_groups:
             total_words = sum(len(s.text.split()) for s in group)
             total_duration = group[-1].end_time - group[0].start_time
 
@@ -267,9 +274,12 @@ class HybridTranscriptProcessingService(TranscriptProcessingService):
             if (total_words < self.config.min_words_per_segment or
                 total_duration < self.config.min_segment_duration) and final_groups:
                 # Merge with previous group
-                final_groups[-1].extend(group)
+                final_groups[-1] = (
+                    final_groups[-1][0] + group,
+                    final_groups[-1][1] + indices
+                )
             else:
-                final_groups.append(group)
+                final_groups.append((group, indices))
 
         return final_groups
 
