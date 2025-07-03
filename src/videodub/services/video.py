@@ -210,7 +210,7 @@ class FFmpegVideoProcessingService(VideoProcessingService):
             return 0.0
 
 
-class BasicVideoProcessor(VideoProcessor):
+class BasicVideoProcessor(VideoProcessingService):
     """Basic video processor with minimal functionality."""
     
     async def create_dubbed_video(
@@ -253,15 +253,15 @@ class BasicVideoProcessor(VideoProcessor):
         }
 
 
-def create_video_processor() -> VideoProcessor:
+def create_video_processor() -> VideoProcessingService:
     """
     Factory function to create the best available video processor.
     
     Returns:
-        VideoProcessor instance (FFmpeg preferred, Basic fallback)
+        VideoProcessingService instance (FFmpeg preferred, Basic fallback)
     """
     try:
-        return FFmpegVideoProcessor()
+        return FFmpegVideoProcessingService()
     except PipelineError:
         logger.warning("FFmpeg not available for video processing, using basic processor")
         return BasicVideoProcessor()

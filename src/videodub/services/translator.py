@@ -10,7 +10,7 @@ from ..core.models import TranscriptSegment, TranslationSegment, TranslationJob
 from ..core.exceptions import TranslationError, APIError, RateLimitError
 from ..config.validation import validate_language_code, validate_text_length
 from ..adapters.openai_adapter import OpenAIAdapter
-from .transcript_processor import SentenceSegment, TranscriptProcessor
+from .transcript import HybridTranscriptProcessingService, ProcessingConfig
 
 
 logger = structlog.get_logger(__name__)
