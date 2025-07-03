@@ -23,6 +23,13 @@ class TTSEngine(Enum):
     SYSTEM = "system"
 
 
+class ProcessingMode(Enum):
+    """Processing modes for transcript processing."""
+    RULE_BASED = "rule_based"
+    AI_ENHANCED = "ai_enhanced"
+    HYBRID = "hybrid"
+
+
 @dataclass
 class VideoMetadata:
     """Metadata for a video."""
@@ -51,6 +58,44 @@ class TranscriptSegment:
             raise ValueError("End time must be greater than start time")
         if not self.text.strip():
             raise ValueError("Text cannot be empty")
+
+
+@dataclass
+class ProcessedSegment:
+    """A processed transcript segment with enhancement metadata."""
+    merged_segments: List[TranscriptSegment]
+    processed_text: str
+    processing_mode: ProcessingMode
+    is_sentence_complete: bool = False
+    context_quality_score: Optional[float] = None
+    timing_preserved: bool = True
+    enhancement_metadata: Dict[str, Any] = field(default_factory=dict)
+    ready_for_translation: bool = True
+
+    def __post_init__(self) -> None:
+        """Validate processed segment."""
+        if not self.processed_text.strip():
+            raise ValueError("Processed text cannot be empty")
+        if not self.merged_segments:
+            raise ValueError("Must have at least one merged segment")
+        if self.context_quality_score is not None:
+            if not 0.0 <= self.context_quality_score <= 1.0:
+                raise ValueError("Context quality score must be between 0.0 and 1.0")
+
+    @property
+    def start_time(self) -> float:
+        """Get the earliest start time from merged segments."""
+        return min(s.start_time for s in self.merged_segments)
+
+    @property
+    def end_time(self) -> float:
+        """Get the latest end time from merged segments."""
+        return max(s.end_time for s in self.merged_segments)
+
+    @property
+    def duration(self) -> float:
+        """Get the total duration of the processed segment."""
+        return self.end_time - self.start_time
 
 
 @dataclass
