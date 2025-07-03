@@ -137,7 +137,7 @@ async def model_comparison_test(
         models: List of OpenAI models to compare
     """
     if models is None:
-        models = ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"]
+        models = ["gpt-4.1-nano"]
     
     print(f"🔬 Model Comparison Test")
     print(f"   Models: {', '.join(models)}")

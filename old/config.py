@@ -67,7 +67,7 @@ class Config:
         "openai": {
             "name": "OpenAI GPT",
             "api_key_env": "OPENAI_API_KEY",
-            "model": "gpt-3.5-turbo"
+            "model": "gpt-4.1-nano"
         },
         "google": {
             "name": "Google Translate",

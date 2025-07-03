@@ -79,7 +79,7 @@ class AudioTranslator:
             
             # Create translation request
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": f"You are a professional translator. Translate the following text to {target_lang_name}. Only return the translated text, nothing else."},
                     {"role": "user", "content": text}

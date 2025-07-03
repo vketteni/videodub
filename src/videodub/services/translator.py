@@ -19,7 +19,7 @@ logger = structlog.get_logger(__name__)
 class OpenAITranslationService(TranslationService):
     """Translation service using OpenAI GPT models."""
     
-    def __init__(self, api_key: str, model: str = "gpt-3.5-turbo", max_retries: int = 3):
+    def __init__(self, api_key: str, model: str = "gpt-4.1-nano", max_retries: int = 3):
         """
         Initialize the translation service.
         
