@@ -8,9 +8,11 @@ __email__ = "vincent@example.com"
 from .core.models import (
     VideoMetadata,
     TranscriptSegment,
+    ProcessedSegment,
     TranslationSegment,
     ProcessingResult,
     ProcessingStatus,
+    ProcessingMode,
     TTSEngine,
     PipelineConfig,
     TranslationJob,
@@ -46,6 +48,7 @@ from .config.settings import (
 
 # Services
 from .services.scraper import YouTubeScrapingService
+from .services.transcript import HybridTranscriptProcessingService, ProcessingConfig
 from .services.translator import OpenAITranslationService, FallbackTranslationService
 from .services.tts import OpenAITTSService, SystemTTSService, create_tts_service
 from .services.storage import FileStorageService
@@ -122,8 +125,8 @@ def create_pipeline(
     # Video processing service
     video_processing_service = FFmpegVideoProcessingService()
     
-    # Transcript processing service (placeholder - needs implementation)
-    transcript_service = None  # TODO: Implement TranscriptProcessingService
+    # Transcript processing service
+    transcript_service = HybridTranscriptProcessingService()
     
     return TranslationPipeline(
         video_scraping_service=video_scraping_service,
@@ -159,9 +162,11 @@ __all__ = [
     # Core models
     "VideoMetadata",
     "TranscriptSegment", 
+    "ProcessedSegment",
     "TranslationSegment",
     "ProcessingResult",
     "ProcessingStatus",
+    "ProcessingMode",
     "TTSEngine",
     "PipelineConfig",
     "TranslationJob",
@@ -194,6 +199,8 @@ __all__ = [
     
     # Services
     "YouTubeScrapingService",
+    "HybridTranscriptProcessingService",
+    "ProcessingConfig",
     "OpenAITranslationService",
     "FallbackTranslationService", 
     "OpenAITTSService",
