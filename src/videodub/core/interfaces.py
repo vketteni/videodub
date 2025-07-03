@@ -287,8 +287,44 @@ class StorageService(ABC):
         pass
 
 
-class AudioProcessor(ABC):
-    """Abstract interface for audio processing."""
+class TranscriptProcessingService(ABC):
+    """Abstract interface for transcript processing services."""
+
+    @abstractmethod
+    async def process_transcript(
+        self, 
+        segments: List[TranscriptSegment]
+    ) -> List[TranscriptSegment]:
+        """
+        Process and reconstruct transcript segments for optimal translation.
+        
+        Args:
+            segments: Raw transcript segments to process
+            
+        Returns:
+            Processed transcript segments
+            
+        Raises:
+            TranscriptProcessingError: If processing fails
+        """
+        pass
+
+    @abstractmethod
+    async def validate_segments(self, segments: List[TranscriptSegment]) -> bool:
+        """
+        Validate transcript segments for quality and completeness.
+        
+        Args:
+            segments: Transcript segments to validate
+            
+        Returns:
+            True if segments are valid
+        """
+        pass
+
+
+class AudioProcessingService(ABC):
+    """Abstract interface for audio processing services."""
 
     @abstractmethod
     async def combine_audio_segments(
@@ -329,8 +365,8 @@ class AudioProcessor(ABC):
         pass
 
 
-class VideoProcessor(ABC):
-    """Abstract interface for video processing and dubbing."""
+class VideoProcessingService(ABC):
+    """Abstract interface for video processing and dubbing services."""
 
     @abstractmethod
     async def create_dubbed_video(

@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any, AsyncIterator
 
 import structlog
 
-from .interfaces import VideoScrapingService, TranslationService, TTSService, StorageService, AudioProcessor, VideoProcessor
+from .interfaces import VideoScrapingService, TranscriptProcessingService, TranslationService, TTSService, AudioProcessingService, VideoProcessingService, StorageService
 from .models import (
     PipelineConfig, ProcessingResult, ProcessingStatus, VideoMetadata,
     TranslationJob, AudioGenerationJob, TTSEngine
@@ -25,32 +25,35 @@ class TranslationPipeline:
     
     def __init__(
         self,
-        video_service: VideoScrapingService,
+        video_scraping_service: VideoScrapingService,
+        transcript_service: TranscriptProcessingService,
         translation_service: TranslationService,
         tts_service: TTSService,
+        audio_service: AudioProcessingService,
+        video_processing_service: VideoProcessingService,
         storage_service: StorageService,
-        audio_processor: AudioProcessor,
-        video_processor: VideoProcessor,
         config: PipelineConfig
     ):
         """
         Initialize the translation pipeline.
         
         Args:
-            video_service: Video scraping service
+            video_scraping_service: Video scraping service
+            transcript_service: Transcript processing service
             translation_service: Translation service
             tts_service: Text-to-speech service
+            audio_service: Audio processing service
+            video_processing_service: Video processing service
             storage_service: Storage service
-            audio_processor: Audio processing service
-            video_processor: Video processing service
             config: Pipeline configuration
         """
-        self.video_service = video_service
+        self.video_scraping_service = video_scraping_service
+        self.transcript_service = transcript_service
         self.translation_service = translation_service
         self.tts_service = tts_service
+        self.audio_service = audio_service
+        self.video_processing_service = video_processing_service
         self.storage_service = storage_service
-        self.audio_processor = audio_processor
-        self.video_processor = video_processor
         self.config = config
         
         logger.info(
@@ -214,7 +217,7 @@ class TranslationPipeline:
         try:
             # Get transcript from original video processing
             original_url = metadata.url
-            _, transcript_segments = await self.video_service.get_transcript(original_url)
+            _, transcript_segments = await self.video_scraping_service.get_transcript(original_url)
             
             if not transcript_segments:
                 result.mark_failed("No transcript available for reprocessing")
@@ -326,7 +329,7 @@ class TranslationPipeline:
         """Scrape video and extract metadata and transcript."""
         try:
             logger.debug("Scraping video", url=url)
-            metadata, transcript_segments = await self.video_service.scrape_video(url)
+            metadata, transcript_segments = await self.video_scraping_service.scrape_video(url)
             
             logger.info(
                 "Video scraped successfully",
@@ -425,7 +428,7 @@ class TranslationPipeline:
                     output_path=combined_audio_path
                 )
                 
-                await self.audio_processor.combine_audio_segments(
+                await self.audio_service.combine_audio_segments(
                     audio_files=audio_files,
                     output_path=combined_audio_path,
                     segments=segments
@@ -482,7 +485,7 @@ class TranslationPipeline:
             dubbed_video_path = video_dir / f"dubbed_video_{self.config.target_language}.mp4"
             
             # Create dubbed video
-            result_path = await self.video_processor.create_dubbed_video(
+            result_path = await self.video_processing_service.create_dubbed_video(
                 original_video_path=original_video_path,
                 translated_audio_path=combined_audio_path,
                 output_path=dubbed_video_path,
