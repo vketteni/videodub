@@ -12,9 +12,13 @@ from videodub import (
     PipelineConfig,
     VideoMetadata,
     TranscriptSegment,
+    ProcessedSegment,
     TranslationSegment,
+    ProcessingMode,
     TTSEngine,
     FileStorageService,
+    HybridTranscriptProcessingService,
+    ProcessingConfig,
     OpenAITranslationService,
     OpenAITTSService,
     YouTubeScrapingService,
@@ -114,6 +118,12 @@ def pipeline_config(temp_dir: Path) -> PipelineConfig:
 def storage_service(temp_dir: Path) -> FileStorageService:
     """File storage service for testing."""
     return FileStorageService(temp_dir / "storage")
+
+
+@pytest.fixture
+def transcript_processing_service() -> HybridTranscriptProcessingService:
+    """Transcript processing service for testing."""
+    return HybridTranscriptProcessingService()
 
 
 @pytest.fixture

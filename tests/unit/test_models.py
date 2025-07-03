@@ -7,9 +7,11 @@ from pathlib import Path
 from videodub.core.models import (
     VideoMetadata,
     TranscriptSegment,
+    ProcessedSegment,
     TranslationSegment,
     ProcessingResult,
     ProcessingStatus,
+    ProcessingMode,
     TTSEngine,
     PipelineConfig,
     TranslationJob,
