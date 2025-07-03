@@ -7,11 +7,13 @@ from typing import List, Optional, Tuple, AsyncIterator, Dict
 from .models import (
     VideoMetadata,
     TranscriptSegment,
+    ProcessedSegment,
     TranslationSegment,
     ProcessingResult,
     TTSEngine,
     TranslationJob,
     AudioGenerationJob,
+    ProcessingMode,
 )
 
 
@@ -293,16 +295,18 @@ class TranscriptProcessingService(ABC):
     @abstractmethod
     async def process_transcript(
         self, 
-        segments: List[TranscriptSegment]
-    ) -> List[TranscriptSegment]:
+        segments: List[TranscriptSegment],
+        mode: ProcessingMode = ProcessingMode.HYBRID
+    ) -> List[ProcessedSegment]:
         """
         Process and reconstruct transcript segments for optimal translation.
         
         Args:
             segments: Raw transcript segments to process
+            mode: Processing mode (rule-based, AI-enhanced, or hybrid)
             
         Returns:
-            Processed transcript segments
+            Processed transcript segments ready for translation
             
         Raises:
             TranscriptProcessingError: If processing fails
