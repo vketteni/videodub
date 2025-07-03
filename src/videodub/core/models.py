@@ -66,6 +66,8 @@ class ProcessedSegment:
     merged_segments: List[TranscriptSegment]
     processed_text: str
     processing_mode: ProcessingMode
+    sequence_number: int
+    original_indices: List[int] = field(default_factory=list)
     is_sentence_complete: bool = False
     context_quality_score: Optional[float] = None
     timing_preserved: bool = True
@@ -78,9 +80,16 @@ class ProcessedSegment:
             raise ValueError("Processed text cannot be empty")
         if not self.merged_segments:
             raise ValueError("Must have at least one merged segment")
+        if self.sequence_number < 0:
+            raise ValueError("Sequence number must be non-negative")
         if self.context_quality_score is not None:
             if not 0.0 <= self.context_quality_score <= 1.0:
                 raise ValueError("Context quality score must be between 0.0 and 1.0")
+        
+        # Auto-populate original_indices if not provided
+        if not self.original_indices:
+            # This is a fallback - in practice, original_indices should be set explicitly
+            self.original_indices = list(range(len(self.merged_segments)))
 
     @property
     def start_time(self) -> float:
