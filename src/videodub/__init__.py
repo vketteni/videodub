@@ -45,12 +45,12 @@ from .config.settings import (
 )
 
 # Services
-from .services.video_scraper import YouTubeScrapingService
+from .services.scraper import YouTubeScrapingService
 from .services.translator import OpenAITranslationService, FallbackTranslationService
 from .services.tts import OpenAITTSService, SystemTTSService, create_tts_service
 from .services.storage import FileStorageService
-from .services.audio_processor import create_audio_processor
-from .services.video_processor import create_video_processor
+from .services.audio import create_audio_processing_service
+from .services.video import FFmpegVideoProcessingService
 
 # Utilities
 from .utils.logging import configure_logging, get_logger, setup_pipeline_logging
@@ -94,7 +94,7 @@ def create_pipeline(
     )
     
     # Initialize services
-    video_service = YouTubeScrapingService(
+    video_scraping_service = YouTubeScrapingService(
         output_dir=config.output_directory / "scraped",
         audio_format=config.audio_format
     )
@@ -116,19 +116,23 @@ def create_pipeline(
     # Storage service
     storage_service = FileStorageService(config.output_directory)
     
-    # Audio processor
-    audio_processor = create_audio_processor()
+    # Audio processing service
+    audio_service = create_audio_processing_service()
     
-    # Video processor
-    video_processor = create_video_processor()
+    # Video processing service
+    video_processing_service = FFmpegVideoProcessingService()
+    
+    # Transcript processing service (placeholder - needs implementation)
+    transcript_service = None  # TODO: Implement TranscriptProcessingService
     
     return TranslationPipeline(
-        video_service=video_service,
+        video_scraping_service=video_scraping_service,
+        transcript_service=transcript_service,
         translation_service=translation_service,
         tts_service=tts_service,
+        audio_service=audio_service,
+        video_processing_service=video_processing_service,
         storage_service=storage_service,
-        audio_processor=audio_processor,
-        video_processor=video_processor,
         config=config
     )
 
@@ -196,8 +200,8 @@ __all__ = [
     "SystemTTSService",
     "create_tts_service",
     "FileStorageService",
-    "create_audio_processor",
-    "create_video_processor",
+    "create_audio_processing_service",
+    "FFmpegVideoProcessingService",
     
     # Utilities
     "configure_logging",
