@@ -1,0 +1,121 @@
+{
+  "architecture_overview": {
+    "description": "This project consists of several interconnected modules that work together to create a complete video translation workflow.",
+    "project_info": {
+      "main_entry_point": "src/videodub/core/pipeline.py",
+      "cli_command": "python examples/quick_test.py",
+      "package_manager": "poetry",
+      "python_version": "3.8+"
+    },
+    "dependencies": {
+      "external_tools": ["ffmpeg", "yt-dlp"],
+      "api_keys_required": ["OPENAI_API_KEY"],
+      "api_keys_optional": ["GOOGLE_APPLICATION_CREDENTIALS", "AZURE_SPEECH_KEY"]
+    },
+    "development": {
+      "current_issues": ["transcript_processor.py needs reimplementation"],
+      "test_command": "make test",
+      "lint_command": "make lint",
+      "format_command": "make format",
+      "install_command": "poetry install"
+    },
+    "key_files": {
+      "main_pipeline": "src/videodub/core/pipeline.py",
+      "configuration": "src/videodub/config/settings.py",
+      "models": "src/videodub/core/models.py",
+      "interfaces": "src/videodub/core/interfaces.py"
+    },
+    "flow": [
+      {
+        "step": 1,
+        "name": "Video Scraping",
+        "component": "VideoScrapingService",
+        "file_path": "src/videodub/services/scraper.py",
+        "implementation": "YouTubeScrapingService",
+        "input": ["Video URL"],
+        "output": ["VideoMetadata", "TranscriptSegments"],
+        "description": "Downloads video, extracts metadata and transcript using video_scraper package",
+        "common_errors": ["Video not found", "No transcript available", "video_scraper package missing"]
+      },
+      {
+        "step": 2,
+        "name": "Transcript Processing",
+        "component": "TranscriptProcessingService",
+        "file_path": "src/videodub/services/transcript.py",
+        "implementation": "TranscriptProcessingService",
+        "input": [""],
+        "output": [""],
+        "description": "Processes and reconstructs transcript segments for optimal translation",
+        "status": "NEEDS_REIMPLEMENTATION"
+      },
+      {
+        "step": 3,
+        "name": "Translation",
+        "component": "TranslationService",
+        "file_path": "src/videodub/services/translator.py",
+        "implementation": "OpenAITranslationService",
+        "input": ["ProcessedTranscriptSegments", "TargetLanguage"],
+        "output": ["TranslationSegments"],
+        "description": "Translates transcript segments using OpenAI GPT models with sentence-level processing",
+        "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"]
+      },
+      {
+        "step": 4,
+        "name": "Text-to-Speech",
+        "component": "TTSService",
+        "file_path": "src/videodub/services/tts.py",
+        "implementation": "OpenAITTSService",
+        "input": ["TranslationSegments", "TargetLanguage"],
+        "output": ["AudioFiles"],
+        "description": "Generates natural-sounding audio from translated text using OpenAI TTS or other engines",
+        "engines_supported": ["OpenAI", "Google", "Azure", "System"]
+      },
+      {
+        "step": 5,
+        "name": "Audio Processing",
+        "component": "AudioProcessingService",
+        "file_path": "src/videodub/services/audio.py",
+        "implementation": "FFmpegAudioProcessingService",
+        "input": ["AudioFiles", "TranslationSegments"],
+        "output": ["CombinedAudioFile"],
+        "description": "Combines individual audio segments into a single synchronized audio track"
+      },
+      {
+        "step": 6,
+        "name": "Video Dubbing",
+        "component": "VideoProcessingService",
+        "file_path": "src/videodub/services/video.py",
+        "implementation": "FFmpegVideoProcessingService",
+        "input": ["OriginalVideo", "CombinedAudioFile"],
+        "output": ["DubbedVideo"],
+        "description": "Creates final dubbed video by replacing original audio with translated audio using FFmpeg",
+        "dependencies": ["ffmpeg"]
+      },
+      {
+        "step": 7,
+        "name": "Storage & Result",
+        "component": "StorageService",
+        "file_path": "src/videodub/services/storage.py",
+        "implementation": "StorageService",
+        "input": ["VideoMetadata", "TranslationSegments", "AudioFiles", "DubbedVideo"],
+        "output": ["ProcessingResult"],
+        "description": "Saves all pipeline outputs and generates processing result with file paths"
+      }
+    ],
+    "side_processes": [
+      {
+        "name": "Cost Tracking & Analytics",
+        "file_path": "src/videodub/utils/cost_tracking.py",
+        "implementation": "CostTracker",
+        "triggered_after": "Translation",
+        "monitored_steps": [
+          "Translation API calls (OpenAI GPT)",
+          "Text-to-Speech API calls",
+          "Token usage tracking",
+          "Character usage tracking",
+          "Real-time cost calculation"
+        ]
+      }
+    ]
+  }
+}
