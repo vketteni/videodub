@@ -1,7 +1,7 @@
 # ADR 0003: Transcript Processing Service Redesign
 
 ## Status
-Proposed
+Proposed - Updated 2025-07-03 to include ordering and concurrency requirements
 
 ## Context
 The current `TranscriptProcessingService` implementation needs reimplementation due to:
@@ -55,6 +55,16 @@ This leads to:
 ## Recommended Implementation
 
 ```python
+@dataclass
+class ProcessedSegment:
+    """Enhanced segment with ordering and provenance tracking."""
+    merged_segments: List[TranscriptSegment]
+    processed_text: str
+    processing_mode: ProcessingMode
+    sequence_number: int  # Deterministic ordering
+    original_indices: List[int]  # Provenance tracking
+    # ... quality and metadata fields
+
 class TranscriptProcessingService:
     """
     Hybrid transcript processing service with rule-based and AI-powered modes.
@@ -93,6 +103,30 @@ class TranscriptProcessingService:
    - Check timing consistency
    - Ensure translation readiness
 
+## Ordering and Concurrency Requirements
+
+### Problem
+Video segments must maintain exact chronological order for proper video synchronization. Processing may need to scale with parallel/batch operations for performance. Segment merging can obscure original ordering relationships, and floating-point timing alone is insufficient for deterministic sorting in edge cases.
+
+### Solution
+- **Explicit sequence numbering** for deterministic ordering regardless of processing approach
+- **Original segment index tracking** for complete provenance and debugging
+- **Parallel-processing-safe design** that allows segments to be processed independently and reassembled correctly
+
+### Design Principles
+1. **Deterministic Ordering**: `sequence_number` provides absolute ordering guarantee
+2. **Full Provenance**: `original_indices` tracks which input segments contributed to each output
+3. **Parallel Safety**: Results can be shuffled during processing and restored via `sequence_number`
+4. **Timing Preservation**: Original timing boundaries maintained through `merged_segments`
+
+### Usage Example
+```python
+# Safe parallel processing
+def process_segments_in_parallel(segments: List[ProcessedSegment]) -> List[ProcessedSegment]:
+    results = parallel_process(segments)  # Any order
+    return sorted(results, key=lambda x: x.sequence_number)  # Restore order
+```
+
 ## Consequences
 
 ### Positive
@@ -123,6 +157,14 @@ class TranscriptProcessingService:
 - Reduced fragmented sentences in output
 - Maintained or improved processing speed
 - Clear cost vs. quality trade-offs
+- Deterministic ordering guarantees for video synchronization
+- Parallel processing capability for scalability
+- Complete segment provenance tracking for debugging
+
+## Changes Log
+- **2025-07-03**: Added ordering and concurrency requirements section
+- **2025-07-03**: Updated ProcessedSegment design to include sequence tracking
+- **2025-07-03**: Enhanced success criteria with ordering and scalability goals
 
 ## Date
 2025-07-03
