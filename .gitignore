@@ -61,4 +61,5 @@ Thumbs.db
 *.avi
 *.mov
 *.mkv
-*.webm
+*.webmoutput/
+.coverage
