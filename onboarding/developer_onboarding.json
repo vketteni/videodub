@@ -48,7 +48,29 @@
             "title": "Transcript Processing Service Redesign", 
             "status": "Accepted",
             "relevance": "Step 2 implementation approach"
+          },
+          {
+            "adr": "0004",
+            "title": "Pipeline Step Evaluation Framework",
+            "status": "Proposed",
+            "relevance": "Quality evaluation and human assessment system"
           }
+        ]
+      },
+      "evaluation_framework": {
+        "location": "evaluation/",
+        "implementation_guide": "evaluation/README.md",
+        "description": "Pipeline step evaluation framework for quality assessment and human review",
+        "status": "Phase 1 Complete",
+        "usage": "poetry run python3 evaluation/scripts/run_evaluation.py --help",
+        "implemented_steps": ["transcript_processing"],
+        "planned_steps": ["translation", "tts", "audio_processing"],
+        "key_features": [
+          "Human-readable before/after comparisons",
+          "Configuration A/B testing",
+          "Quality scoring and metrics",
+          "Automated report generation",
+          "Real service integration"
         ]
       }
     },
