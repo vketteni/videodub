@@ -1,0 +1,7 @@
+# Generated evaluation reports
+reports/generated/
+
+# Test artifacts
+*.pyc
+__pycache__/
+.pytest_cache/

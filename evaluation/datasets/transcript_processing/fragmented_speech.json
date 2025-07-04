@@ -1,0 +1,137 @@
+{
+  "name": "fragmented_speech",
+  "description": "Test cases with fragmented sentences and incomplete thoughts that need reconstruction",
+  "input_samples": [
+    {
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 2.5,
+          "text": "So today we're going to talk about",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 2.5,
+          "end": 5.0,
+          "text": "machine learning and how it",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 5.0,
+          "end": 7.5,
+          "text": "can be used to improve",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 7.5,
+          "end": 10.0,
+          "text": "our daily workflows",
+          "speaker": "Speaker 1"
+        }
+      ],
+      "description": "Fragmented sentence across multiple segments"
+    },
+    {
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 1.8,
+          "text": "the main issue is",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 1.8,
+          "end": 3.2,
+          "text": "that we don't have",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 3.2,
+          "end": 4.9,
+          "text": "enough data to",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 4.9,
+          "end": 6.1,
+          "text": "train the model",
+          "speaker": "Speaker 1"
+        }
+      ],
+      "description": "Technical discussion with fragmented explanation"
+    },
+    {
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 1.5,
+          "text": "you know what",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 1.5,
+          "end": 2.8,
+          "text": "i was thinking",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 2.8,
+          "end": 4.2,
+          "text": "we could try",
+          "speaker": "Speaker 1"
+        },
+        {
+          "start": 4.2,
+          "end": 6.0,
+          "text": "a different approach",
+          "speaker": "Speaker 1"
+        }
+      ],
+      "description": "Casual conversation with hesitation and fragments"
+    }
+  ],
+  "expected_outcomes": [
+    {
+      "merged_segments": [
+        {
+          "start": 0.0,
+          "end": 10.0,
+          "text": "So today we're going to talk about machine learning and how it can be used to improve our daily workflows.",
+          "speaker": "Speaker 1"
+        }
+      ],
+      "quality_indicators": ["complete_sentence", "proper_capitalization", "improved_coherence"]
+    },
+    {
+      "merged_segments": [
+        {
+          "start": 0.0,
+          "end": 6.1,
+          "text": "The main issue is that we don't have enough data to train the model.",
+          "speaker": "Speaker 1"
+        }
+      ],
+      "quality_indicators": ["complete_sentence", "proper_capitalization", "technical_coherence"]
+    },
+    {
+      "merged_segments": [
+        {
+          "start": 0.0,
+          "end": 6.0,
+          "text": "You know what, I was thinking we could try a different approach.",
+          "speaker": "Speaker 1"
+        }
+      ],
+      "quality_indicators": ["complete_sentence", "proper_capitalization", "natural_flow"]
+    }
+  ],
+  "metadata": {
+    "difficulty": "medium",
+    "focus_areas": ["sentence_reconstruction", "capitalization", "coherence"],
+    "success_criteria": {
+      "min_quality_score": 0.7,
+      "max_processing_time": 2.0,
+      "required_improvements": ["complete_sentences", "proper_capitalization"]
+    }
+  }
+}

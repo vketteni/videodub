@@ -1,0 +1,167 @@
+{
+  "name": "multi_speaker",
+  "description": "Conversations with multiple speakers and speaker transitions",
+  "input_samples": [
+    {
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 2.0,
+          "text": "what do you think about the proposal",
+          "speaker": "Alice"
+        },
+        {
+          "start": 2.0,
+          "end": 4.5,
+          "text": "i think it's a good start",
+          "speaker": "Bob"
+        },
+        {
+          "start": 4.5,
+          "end": 7.0,
+          "text": "but we need to consider the budget",
+          "speaker": "Bob"
+        },
+        {
+          "start": 7.0,
+          "end": 9.2,
+          "text": "exactly my thoughts",
+          "speaker": "Alice"
+        }
+      ],
+      "description": "Business discussion between two speakers"
+    },
+    {
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 1.8,
+          "text": "hey everyone",
+          "speaker": "Manager"
+        },
+        {
+          "start": 1.8,
+          "end": 3.5,
+          "text": "let's start the meeting",
+          "speaker": "Manager"
+        },
+        {
+          "start": 3.5,
+          "end": 5.0,
+          "text": "sounds good",
+          "speaker": "Team Member 1"
+        },
+        {
+          "start": 5.0,
+          "end": 6.8,
+          "text": "ready when you are",
+          "speaker": "Team Member 2"
+        }
+      ],
+      "description": "Meeting opening with multiple participants"
+    },
+    {
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 2.2,
+          "text": "the results show",
+          "speaker": "Analyst"
+        },
+        {
+          "start": 2.2,
+          "end": 4.0,
+          "text": "a significant improvement",
+          "speaker": "Analyst"
+        },
+        {
+          "start": 4.0,
+          "end": 5.5,
+          "text": "that's impressive",
+          "speaker": "Director"
+        },
+        {
+          "start": 5.5,
+          "end": 7.8,
+          "text": "how did we achieve this",
+          "speaker": "Director"
+        }
+      ],
+      "description": "Results presentation with Q&A"
+    }
+  ],
+  "expected_outcomes": [
+    {
+      "merged_segments": [
+        {
+          "start": 0.0,
+          "end": 2.0,
+          "text": "What do you think about the proposal?",
+          "speaker": "Alice"
+        },
+        {
+          "start": 2.0,
+          "end": 7.0,
+          "text": "I think it's a good start, but we need to consider the budget.",
+          "speaker": "Bob"
+        },
+        {
+          "start": 7.0,
+          "end": 9.2,
+          "text": "Exactly my thoughts.",
+          "speaker": "Alice"
+        }
+      ],
+      "quality_indicators": ["speaker_boundaries_preserved", "complete_sentences", "proper_capitalization"]
+    },
+    {
+      "merged_segments": [
+        {
+          "start": 0.0,
+          "end": 3.5,
+          "text": "Hey everyone, let's start the meeting.",
+          "speaker": "Manager"
+        },
+        {
+          "start": 3.5,
+          "end": 5.0,
+          "text": "Sounds good.",
+          "speaker": "Team Member 1"
+        },
+        {
+          "start": 5.0,
+          "end": 6.8,
+          "text": "Ready when you are.",
+          "speaker": "Team Member 2"
+        }
+      ],
+      "quality_indicators": ["speaker_boundaries_preserved", "natural_flow", "proper_capitalization"]
+    },
+    {
+      "merged_segments": [
+        {
+          "start": 0.0,
+          "end": 4.0,
+          "text": "The results show a significant improvement.",
+          "speaker": "Analyst"
+        },
+        {
+          "start": 4.0,
+          "end": 7.8,
+          "text": "That's impressive. How did we achieve this?",
+          "speaker": "Director"
+        }
+      ],
+      "quality_indicators": ["speaker_boundaries_preserved", "question_formatting", "proper_capitalization"]
+    }
+  ],
+  "metadata": {
+    "difficulty": "high",
+    "focus_areas": ["speaker_boundary_detection", "conversation_flow", "context_preservation"],
+    "success_criteria": {
+      "min_quality_score": 0.7,
+      "max_processing_time": 2.5,
+      "required_improvements": ["speaker_separation", "complete_sentences"]
+    }
+  }
+}
