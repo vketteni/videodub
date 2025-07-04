@@ -13,7 +13,7 @@
       "api_keys_optional": ["GOOGLE_APPLICATION_CREDENTIALS", "AZURE_SPEECH_KEY"]
     },
     "development": {
-      "current_issues": ["transcript_processor.py needs reimplementation"],
+      "current_issues": [],
       "test_command": "make test",
       "lint_command": "make lint",
       "format_command": "make format",
@@ -42,11 +42,18 @@
         "name": "Transcript Processing",
         "component": "TranscriptProcessingService",
         "file_path": "src/videodub/services/transcript.py",
-        "implementation": "TranscriptProcessingService",
-        "input": [""],
-        "output": [""],
-        "description": "Processes and reconstructs transcript segments for optimal translation",
-        "status": "NEEDS_REIMPLEMENTATION"
+        "implementation": "HybridTranscriptProcessingService",
+        "input": ["TranscriptSegments"],
+        "output": ["ProcessedSegments"],
+        "description": "Hybrid processing with rule-based preprocessing and optional AI enhancement for optimal translation quality",
+        "processing_modes": ["RULE_BASED", "AI_ENHANCED", "HYBRID"],
+        "features": [
+          "Sequence tracking for deterministic ordering",
+          "Intelligent segment merging with quality thresholds",
+          "Context-aware sentence reconstruction",
+          "Parallel processing support",
+          "Configurable cost vs quality trade-offs"
+        ]
       },
       {
         "step": 3,

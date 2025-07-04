@@ -1,7 +1,7 @@
 # ADR 0003: Transcript Processing Service Redesign
 
 ## Status
-Proposed - Updated 2025-07-03 to include ordering and concurrency requirements
+Accepted - Implemented 2025-07-03 as HybridTranscriptProcessingService
 
 ## Context
 The current `TranscriptProcessingService` implementation needs reimplementation due to:
