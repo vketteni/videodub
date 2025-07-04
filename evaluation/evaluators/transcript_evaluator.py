@@ -26,43 +26,89 @@ try:
     if src_path not in sys.path:
         sys.path.insert(0, src_path)
         
-    # Try importing just the models file
+    # Try importing models and service directly
     from videodub.core.models import (
         ProcessedSegment,
         ProcessingMode, 
         TranscriptSegment,
     )
     
-    logger.info("Successfully imported models")
-    
-    # For now, create a mock service that uses real models
-    class MockHybridTranscriptProcessingService:
-        """Mock service for testing that returns properly formatted data."""
+    # Try to import the real service
+    try:
+        from videodub.services.transcript import HybridTranscriptProcessingService
+        logger.info("✅ Successfully imported REAL HybridTranscriptProcessingService")
+        USING_REAL_SERVICE = True
+    except ImportError as service_import_error:
+        logger.warning(f"Could not import real service: {service_import_error}")
         
-        async def process_transcript(self, segments, processing_mode):
-            """Mock processing that creates properly formatted output."""
-            # Create a simple merged segment
-            if segments:
-                merged_text = " ".join(seg.text for seg in segments)
-                merged_text = merged_text.capitalize()
-                if not merged_text.endswith('.'):
-                    merged_text += '.'
+        # Fallback to improved mock with sentence processing
+        class ImprovedMockTranscriptProcessingService:
+            """Improved mock with sentence-aware processing."""
+            
+            async def process_transcript(self, segments, processing_mode):
+                """Mock processing with sentence boundary detection."""
+                if not segments:
+                    return []
+                
+                processed_segments = []
+                current_group = []
+                sequence_num = 0
+                
+                for i, segment in enumerate(segments):
+                    current_group.append(segment)
                     
-                processed_segment = ProcessedSegment(
-                    merged_segments=segments,
-                    processed_text=merged_text,
-                    processing_mode=processing_mode,
-                    sequence_number=0,
-                    original_indices=list(range(len(segments))),
-                    is_sentence_complete=True,
-                    context_quality_score=0.8,
-                    ready_for_translation=True
-                )
-                return [processed_segment]
-            return []
-    
-    HybridTranscriptProcessingService = MockHybridTranscriptProcessingService
-    logger.info("Using mock transcript processing service with real models")
+                    # Check if this segment ends a sentence or we should break
+                    should_break = (
+                        self._ends_sentence(segment.text) or
+                        len(current_group) >= 3 or  # Max 3 segments per group
+                        i == len(segments) - 1  # Last segment
+                    )
+                    
+                    if should_break:
+                        # Create processed segment from current group
+                        merged_text = " ".join(seg.text for seg in current_group)
+                        merged_text = self._fix_text(merged_text)
+                        
+                        processed_segment = ProcessedSegment(
+                            merged_segments=current_group.copy(),
+                            processed_text=merged_text,
+                            processing_mode=processing_mode,
+                            sequence_number=sequence_num,
+                            original_indices=list(range(i - len(current_group) + 1, i + 1)),
+                            is_sentence_complete=self._ends_sentence(merged_text),
+                            context_quality_score=0.8,
+                            ready_for_translation=True
+                        )
+                        processed_segments.append(processed_segment)
+                        
+                        # Reset for next group
+                        current_group = []
+                        sequence_num += 1
+                
+                return processed_segments
+            
+            def _ends_sentence(self, text: str) -> bool:
+                """Check if text ends a sentence."""
+                text = text.strip()
+                return bool(text and (
+                    text.endswith('.') or 
+                    text.endswith('!') or 
+                    text.endswith('?') or
+                    text.endswith(':')
+                ))
+            
+            def _fix_text(self, text: str) -> str:
+                """Basic text cleanup."""
+                text = text.strip()
+                if text:
+                    text = text[0].upper() + text[1:]  # Capitalize first letter
+                    if not self._ends_sentence(text):
+                        text += '.'  # Add period if missing
+                return text
+        
+        HybridTranscriptProcessingService = ImprovedMockTranscriptProcessingService
+        logger.info("Using improved mock transcript processing service with sentence awareness")
+        USING_REAL_SERVICE = False
     
 except Exception as e:
     logger.warning(f"Could not import transcript processing models: {e}")
@@ -359,15 +405,45 @@ class TranscriptProcessingEvaluator(PipelineStepEvaluator):
             for i, ps in enumerate(processed_segments, 1):
                 processed_text = ps.get("processed_text", "")
                 merged_segs = ps.get("merged_segments", [])
+                processing_mode = ps.get("processing_mode", "unknown")
+                sequence_number = ps.get("sequence_number", "")
+                quality_score = ps.get("quality_score", "")
                 
                 if merged_segs:
                     start = min(seg.get("start_time", 0) for seg in merged_segs)
                     end = max(seg.get("end_time", 0) for seg in merged_segs)
                     timing_info = f"[{start:.1f}-{end:.1f}s]"
+                    
+                    # Show which original segments were merged
+                    original_count = len(merged_segs)
+                    if original_count > 1:
+                        merged_info = f" (merged {original_count} segments)"
+                    else:
+                        merged_info = ""
                 else:
                     timing_info = "[timing unknown]"
+                    merged_info = ""
                 
-                comparison += f"{i}. {timing_info} \"{processed_text}\"\n"
+                # Add quality info if available
+                quality_info = ""
+                if quality_score:
+                    quality_info = f" [Q: {quality_score:.2f}]"
+                
+                comparison += f"{i}. {timing_info}{merged_info}{quality_info} \"{processed_text}\"\n"
+                
+                # Show the original segments that were merged (if more than 1)
+                if merged_segs and len(merged_segs) > 1:
+                    comparison += f"   └─ Merged from segments: "
+                    for j, seg in enumerate(merged_segs):
+                        if j > 0:
+                            comparison += " + "
+                        seg_start = seg.get("start_time", 0)
+                        seg_end = seg.get("end_time", 0) 
+                        seg_text = seg.get("text", "")[:30]
+                        if len(seg.get("text", "")) > 30:
+                            seg_text += "..."
+                        comparison += f"[{seg_start:.1f}-{seg_end:.1f}s: \"{seg_text}\"]"
+                    comparison += "\n"
             
             comparison += "\n"
         
