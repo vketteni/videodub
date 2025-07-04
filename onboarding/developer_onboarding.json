@@ -25,6 +25,33 @@
       "models": "src/videodub/core/models.py",
       "interfaces": "src/videodub/core/interfaces.py"
     },
+    "documentation": {
+      "architecture_decisions": {
+        "location": "docs/adr/",
+        "index": "docs/adr/README.md",
+        "description": "Architecture Decision Records documenting key design decisions and their rationale",
+        "key_adrs": [
+          {
+            "adr": "0001",
+            "title": "Pipeline Architecture Design",
+            "status": "Accepted",
+            "relevance": "Core system architecture"
+          },
+          {
+            "adr": "0002", 
+            "title": "Real-Time Cost Tracking Integration",
+            "status": "Accepted",
+            "relevance": "Cost monitoring and analytics"
+          },
+          {
+            "adr": "0003",
+            "title": "Transcript Processing Service Redesign", 
+            "status": "Accepted",
+            "relevance": "Step 2 implementation approach"
+          }
+        ]
+      }
+    },
     "flow": [
       {
         "step": 1,
