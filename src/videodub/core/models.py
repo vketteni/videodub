@@ -4,11 +4,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 
 class ProcessingStatus(Enum):
     """Status of video processing."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -17,6 +18,7 @@ class ProcessingStatus(Enum):
 
 class TTSEngine(Enum):
     """Available text-to-speech engines."""
+
     OPENAI = "openai"
     GOOGLE = "google"
     AZURE = "azure"
@@ -25,14 +27,24 @@ class TTSEngine(Enum):
 
 class ProcessingMode(Enum):
     """Processing modes for transcript processing."""
+
     RULE_BASED = "rule_based"
     AI_ENHANCED = "ai_enhanced"
     HYBRID = "hybrid"
 
 
+class SourceType(Enum):
+    """Source types for data extraction."""
+
+    YOUTUBE = "youtube"
+    TRANSCRIPTION = "transcription"
+    LOCAL_FILE = "local_file"
+
+
 @dataclass
 class VideoMetadata:
     """Metadata for a video."""
+
     video_id: str
     title: str
     duration: float
@@ -44,8 +56,21 @@ class VideoMetadata:
 
 
 @dataclass
+class TimingMetadata:
+    """Timing-related metadata for transcripts."""
+
+    total_duration: float
+    segment_count: int
+    average_segment_duration: float
+    timing_accuracy: Optional[float] = None  # 0.0-1.0 confidence score
+    has_precise_timing: bool = True
+    extraction_method: Optional[str] = None
+
+
+@dataclass
 class TranscriptSegment:
     """A segment of transcript with timing information."""
+
     start_time: float
     end_time: float
     text: str
@@ -61,8 +86,42 @@ class TranscriptSegment:
 
 
 @dataclass
+class TimedTranscript:
+    """Transcript with timing information from data extraction."""
+
+    segments: List[TranscriptSegment]
+    source_type: SourceType
+    timing_metadata: TimingMetadata
+    video_metadata: VideoMetadata
+    language: Optional[str] = None
+    extraction_quality: Optional[float] = None  # 0.0-1.0 quality score
+
+    def __post_init__(self) -> None:
+        """Validate timed transcript."""
+        if not self.segments:
+            raise ValueError("Timed transcript must have at least one segment")
+
+        # Validate timing metadata consistency
+        actual_duration = (
+            max(s.end_time for s in self.segments) if self.segments else 0.0
+        )
+        if (
+            abs(actual_duration - self.timing_metadata.total_duration) > 1.0
+        ):  # 1 second tolerance
+            raise ValueError(
+                f"Timing metadata duration mismatch: {actual_duration} vs {self.timing_metadata.total_duration}"
+            )
+
+        if len(self.segments) != self.timing_metadata.segment_count:
+            raise ValueError(
+                f"Segment count mismatch: {len(self.segments)} vs {self.timing_metadata.segment_count}"
+            )
+
+
+@dataclass
 class ProcessedSegment:
     """A processed transcript segment with enhancement metadata."""
+
     merged_segments: List[TranscriptSegment]
     processed_text: str
     processing_mode: ProcessingMode
@@ -85,7 +144,7 @@ class ProcessedSegment:
         if self.context_quality_score is not None:
             if not 0.0 <= self.context_quality_score <= 1.0:
                 raise ValueError("Context quality score must be between 0.0 and 1.0")
-        
+
         # Auto-populate original_indices if not provided
         if not self.original_indices:
             # This is a fallback - in practice, original_indices should be set explicitly
@@ -110,6 +169,7 @@ class ProcessedSegment:
 @dataclass
 class TranslationSegment:
     """A translated segment with audio generation info."""
+
     original_segment: TranscriptSegment
     translated_text: str
     audio_path: Optional[Path] = None
@@ -125,6 +185,7 @@ class TranslationSegment:
 @dataclass
 class ProcessingResult:
     """Result of video processing."""
+
     video_id: str
     status: ProcessingStatus
     started_at: datetime = field(default_factory=datetime.now)
@@ -158,6 +219,7 @@ class ProcessingResult:
 @dataclass
 class PipelineConfig:
     """Configuration for the translation pipeline."""
+
     output_directory: Path
     target_language: str = "es"
     tts_engine: TTSEngine = TTSEngine.OPENAI
@@ -186,6 +248,7 @@ class PipelineConfig:
 @dataclass
 class TranslationJob:
     """A translation job containing all segments to process."""
+
     video_id: str
     segments: List[TranscriptSegment]
     target_language: str
@@ -219,6 +282,7 @@ class TranslationJob:
 @dataclass
 class AudioGenerationJob:
     """Job for generating audio from translated segments."""
+
     segments: List[TranslationSegment]
     output_directory: Path
     language: str

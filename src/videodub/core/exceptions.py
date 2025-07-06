@@ -3,7 +3,7 @@
 
 class PipelineError(Exception):
     """Base exception for pipeline errors."""
-    
+
     def __init__(self, message: str, details: dict = None):
         super().__init__(message)
         self.message = message
@@ -12,48 +12,76 @@ class PipelineError(Exception):
 
 class VideoScrapingError(PipelineError):
     """Error during video scraping."""
+
     pass
 
 
 class TranslationError(PipelineError):
     """Error during translation."""
+
+    pass
+
+
+class TranscriptProcessingError(PipelineError):
+    """Error during transcript processing."""
+
+    pass
+
+
+class TranscriptEnhancementError(PipelineError):
+    """Error during AI-powered transcript enhancement."""
+
+    pass
+
+
+class DataExtractionError(PipelineError):
+    """Error during data extraction."""
+
     pass
 
 
 class TTSError(PipelineError):
     """Error during text-to-speech generation."""
+
     pass
 
 
 class ConfigurationError(PipelineError):
     """Error in configuration."""
+
     pass
 
 
 class StorageError(PipelineError):
     """Error in storage operations."""
+
     pass
 
 
 class AudioProcessingError(PipelineError):
     """Error during audio processing."""
+
     pass
 
 
 class ProcessingError(PipelineError):
     """Error during general processing operations."""
+
     pass
 
 
 class ValidationError(PipelineError):
     """Error in data validation."""
+
     pass
 
 
 class APIError(PipelineError):
     """Error when calling external APIs."""
-    
-    def __init__(self, message: str, status_code: int = None, response_body: str = None):
+
+    def __init__(
+        self, message: str, status_code: int = None, response_body: str = None
+    ):
         super().__init__(message)
         self.status_code = status_code
         self.response_body = response_body
@@ -61,14 +89,17 @@ class APIError(PipelineError):
 
 class RateLimitError(APIError):
     """Rate limit exceeded for external API."""
+
     pass
 
 
 class AuthenticationError(APIError):
     """Authentication failed for external API."""
+
     pass
 
 
 class QuotaExceededError(APIError):
     """API quota exceeded."""
+
     pass

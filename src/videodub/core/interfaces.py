@@ -2,35 +2,88 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Optional, Tuple, AsyncIterator, Dict
+from typing import AsyncIterator, Dict, List, Optional, Tuple
 
 from .models import (
-    VideoMetadata,
-    TranscriptSegment,
-    ProcessedSegment,
-    TranslationSegment,
-    ProcessingResult,
-    TTSEngine,
-    TranslationJob,
     AudioGenerationJob,
+    ProcessedSegment,
     ProcessingMode,
+    ProcessingResult,
+    SourceType,
+    TimedTranscript,
+    TranscriptSegment,
+    TranslationJob,
+    TranslationSegment,
+    TTSEngine,
+    VideoMetadata,
 )
+
+
+class DataExtractionService(ABC):
+    """Abstract interface for data extraction services."""
+
+    @abstractmethod
+    async def extract_from_url(self, url: str) -> TimedTranscript:
+        """
+        Extract transcript and timing data from video URL.
+
+        Args:
+            url: Video URL to extract from
+
+        Returns:
+            TimedTranscript with extracted data
+
+        Raises:
+            DataExtractionError: If extraction fails
+        """
+        pass
+
+    @abstractmethod
+    async def extract_from_file(self, file_path: Path) -> TimedTranscript:
+        """
+        Extract transcript and timing data from local video file.
+
+        Args:
+            file_path: Path to video file
+
+        Returns:
+            TimedTranscript with extracted data
+
+        Raises:
+            DataExtractionError: If extraction fails
+        """
+        pass
+
+    @abstractmethod
+    def supports_source(self, source: str) -> bool:
+        """
+        Check if this service supports the given source.
+
+        Args:
+            source: URL or file path to check
+
+        Returns:
+            True if source is supported
+        """
+        pass
 
 
 class VideoScrapingService(ABC):
     """Abstract interface for video scraping services."""
 
     @abstractmethod
-    async def scrape_video(self, url: str) -> Tuple[VideoMetadata, List[TranscriptSegment]]:
+    async def scrape_video(
+        self, url: str
+    ) -> Tuple[VideoMetadata, List[TranscriptSegment]]:
         """
         Scrape video and extract metadata and transcript.
-        
+
         Args:
             url: Video URL to scrape
-            
+
         Returns:
             Tuple of video metadata and transcript segments
-            
+
         Raises:
             VideoScrapingError: If scraping fails
         """
@@ -40,13 +93,13 @@ class VideoScrapingService(ABC):
     async def scrape_audio_only(self, url: str) -> Tuple[VideoMetadata, Path]:
         """
         Scrape only audio from video.
-        
+
         Args:
             url: Video URL to scrape
-            
+
         Returns:
             Tuple of video metadata and audio file path
-            
+
         Raises:
             VideoScrapingError: If scraping fails
         """
@@ -56,13 +109,13 @@ class VideoScrapingService(ABC):
     async def get_transcript(self, url: str) -> List[TranscriptSegment]:
         """
         Extract transcript from video.
-        
+
         Args:
             url: Video URL
-            
+
         Returns:
             List of transcript segments
-            
+
         Raises:
             VideoScrapingError: If transcript extraction fails
         """
@@ -76,14 +129,14 @@ class TranslationService(ABC):
     async def translate_text(self, text: str, target_language: str) -> str:
         """
         Translate a single text string.
-        
+
         Args:
             text: Text to translate
             target_language: Target language code
-            
+
         Returns:
             Translated text
-            
+
         Raises:
             TranslationError: If translation fails
         """
@@ -91,20 +144,18 @@ class TranslationService(ABC):
 
     @abstractmethod
     async def translate_segments(
-        self, 
-        segments: List[TranscriptSegment], 
-        target_language: str
+        self, segments: List[TranscriptSegment], target_language: str
     ) -> List[TranslationSegment]:
         """
         Translate multiple transcript segments.
-        
+
         Args:
             segments: List of transcript segments to translate
             target_language: Target language code
-            
+
         Returns:
             List of translated segments
-            
+
         Raises:
             TranslationError: If translation fails
         """
@@ -112,18 +163,17 @@ class TranslationService(ABC):
 
     @abstractmethod
     async def translate_batch(
-        self, 
-        job: TranslationJob
+        self, job: TranslationJob
     ) -> AsyncIterator[TranslationSegment]:
         """
         Translate segments in batches with progress tracking.
-        
+
         Args:
             job: Translation job with segments to process
-            
+
         Yields:
             Translated segments as they are completed
-            
+
         Raises:
             TranslationError: If translation fails
         """
@@ -135,24 +185,20 @@ class TTSService(ABC):
 
     @abstractmethod
     async def generate_audio(
-        self, 
-        text: str, 
-        language: str,
-        output_path: Path,
-        voice: Optional[str] = None
+        self, text: str, language: str, output_path: Path, voice: Optional[str] = None
     ) -> Path:
         """
         Generate audio from text.
-        
+
         Args:
             text: Text to convert to speech
             language: Language code for TTS
             output_path: Where to save the audio file
             voice: Optional voice identifier
-            
+
         Returns:
             Path to generated audio file
-            
+
         Raises:
             TTSError: If audio generation fails
         """
@@ -160,18 +206,17 @@ class TTSService(ABC):
 
     @abstractmethod
     async def generate_batch_audio(
-        self, 
-        job: AudioGenerationJob
+        self, job: AudioGenerationJob
     ) -> AsyncIterator[Path]:
         """
         Generate audio for multiple segments.
-        
+
         Args:
             job: Audio generation job
-            
+
         Yields:
             Paths to generated audio files
-            
+
         Raises:
             TTSError: If audio generation fails
         """
@@ -181,7 +226,7 @@ class TTSService(ABC):
     def get_supported_languages(self) -> List[str]:
         """
         Get list of supported languages for this TTS engine.
-        
+
         Returns:
             List of language codes
         """
@@ -191,10 +236,10 @@ class TTSService(ABC):
     def get_supported_voices(self, language: str) -> List[str]:
         """
         Get list of available voices for a language.
-        
+
         Args:
             language: Language code
-            
+
         Returns:
             List of voice identifiers
         """
@@ -208,11 +253,11 @@ class StorageService(ABC):
     async def save_metadata(self, video_id: str, metadata: VideoMetadata) -> Path:
         """
         Save video metadata to storage.
-        
+
         Args:
             video_id: Video identifier
             metadata: Video metadata to save
-            
+
         Returns:
             Path where metadata was saved
         """
@@ -220,17 +265,15 @@ class StorageService(ABC):
 
     @abstractmethod
     async def save_translation_data(
-        self, 
-        video_id: str, 
-        segments: List[TranslationSegment]
+        self, video_id: str, segments: List[TranslationSegment]
     ) -> Path:
         """
         Save translation data to storage.
-        
+
         Args:
             video_id: Video identifier
             segments: Translated segments to save
-            
+
         Returns:
             Path where translation data was saved
         """
@@ -240,10 +283,10 @@ class StorageService(ABC):
     async def save_processing_result(self, result: ProcessingResult) -> Path:
         """
         Save processing result to storage.
-        
+
         Args:
             result: Processing result to save
-            
+
         Returns:
             Path where result was saved
         """
@@ -253,23 +296,25 @@ class StorageService(ABC):
     async def load_metadata(self, video_id: str) -> Optional[VideoMetadata]:
         """
         Load video metadata from storage.
-        
+
         Args:
             video_id: Video identifier
-            
+
         Returns:
             Video metadata if found, None otherwise
         """
         pass
 
     @abstractmethod
-    async def load_translation_data(self, video_id: str) -> Optional[List[TranslationSegment]]:
+    async def load_translation_data(
+        self, video_id: str
+    ) -> Optional[List[TranslationSegment]]:
         """
         Load translation data from storage.
-        
+
         Args:
             video_id: Video identifier
-            
+
         Returns:
             Translation segments if found, None otherwise
         """
@@ -279,12 +324,58 @@ class StorageService(ABC):
     async def get_video_directory(self, video_id: str) -> Path:
         """
         Get the storage directory for a video.
-        
+
         Args:
             video_id: Video identifier
-            
+
         Returns:
             Path to video directory
+        """
+        pass
+
+
+class TranscriptEnhancementService(ABC):
+    """Abstract interface for AI-powered transcript enhancement services."""
+
+    @abstractmethod
+    async def enhance_segment(
+        self,
+        target_segment: ProcessedSegment,
+        previous_segment: Optional[ProcessedSegment] = None,
+        next_segment: Optional[ProcessedSegment] = None,
+    ) -> ProcessedSegment:
+        """
+        Enhance a transcript segment using AI to improve completeness and quality.
+
+        Args:
+            target_segment: The segment to enhance
+            previous_segment: Optional previous segment for context
+            next_segment: Optional next segment for context
+
+        Returns:
+            Enhanced segment with improved text and metadata
+
+        Raises:
+            TranscriptEnhancementError: If enhancement fails
+        """
+        pass
+
+    @abstractmethod
+    async def enhance_segments_batch(
+        self, segments: List[ProcessedSegment], threshold: float = 0.8
+    ) -> List[ProcessedSegment]:
+        """
+        Enhance multiple segments in batch, only processing those below quality threshold.
+
+        Args:
+            segments: List of processed segments
+            threshold: Quality score threshold below which segments are enhanced
+
+        Returns:
+            List of segments with low-quality ones enhanced
+
+        Raises:
+            TranscriptEnhancementError: If enhancement fails
         """
         pass
 
@@ -294,20 +385,20 @@ class TranscriptProcessingService(ABC):
 
     @abstractmethod
     async def process_transcript(
-        self, 
+        self,
         segments: List[TranscriptSegment],
-        mode: ProcessingMode = ProcessingMode.HYBRID
+        mode: ProcessingMode = ProcessingMode.HYBRID,
     ) -> List[ProcessedSegment]:
         """
         Process and reconstruct transcript segments for optimal translation.
-        
+
         Args:
             segments: Raw transcript segments to process
             mode: Processing mode (rule-based, AI-enhanced, or hybrid)
-            
+
         Returns:
             Processed transcript segments ready for translation
-            
+
         Raises:
             TranscriptProcessingError: If processing fails
         """
@@ -317,10 +408,10 @@ class TranscriptProcessingService(ABC):
     async def validate_segments(self, segments: List[TranscriptSegment]) -> bool:
         """
         Validate transcript segments for quality and completeness.
-        
+
         Args:
             segments: Transcript segments to validate
-            
+
         Returns:
             True if segments are valid
         """
@@ -332,19 +423,19 @@ class AudioProcessingService(ABC):
 
     @abstractmethod
     async def combine_audio_segments(
-        self, 
-        audio_files: List[Path], 
+        self,
+        audio_files: List[Path],
         output_path: Path,
-        segments: List[TranslationSegment]
+        segments: List[TranslationSegment],
     ) -> Path:
         """
         Combine multiple audio segments into a single file.
-        
+
         Args:
             audio_files: List of audio file paths
             output_path: Where to save combined audio
             segments: Translation segments with timing info
-            
+
         Returns:
             Path to combined audio file
         """
@@ -352,17 +443,15 @@ class AudioProcessingService(ABC):
 
     @abstractmethod
     async def adjust_audio_timing(
-        self, 
-        audio_path: Path, 
-        segment: TranslationSegment
+        self, audio_path: Path, segment: TranslationSegment
     ) -> Path:
         """
         Adjust audio timing to match original segment duration.
-        
+
         Args:
             audio_path: Path to audio file
             segment: Translation segment with timing info
-            
+
         Returns:
             Path to adjusted audio file
         """
@@ -374,21 +463,21 @@ class VideoProcessingService(ABC):
 
     @abstractmethod
     async def create_dubbed_video(
-        self, 
-        original_video_path: Path, 
-        translated_audio_path: Path, 
+        self,
+        original_video_path: Path,
+        translated_audio_path: Path,
         output_path: Path,
-        segments: List[TranslationSegment]
+        segments: List[TranslationSegment],
     ) -> Path:
         """
         Create dubbed video by combining original video with translated audio.
-        
+
         Args:
             original_video_path: Path to original video file
             translated_audio_path: Path to translated audio file
             output_path: Where to save dubbed video
             segments: Translation segments with timing info
-            
+
         Returns:
             Path to dubbed video file
         """
@@ -398,10 +487,10 @@ class VideoProcessingService(ABC):
     async def extract_video_metadata(self, video_path: Path) -> Dict:
         """
         Extract metadata from video file.
-        
+
         Args:
             video_path: Path to video file
-            
+
         Returns:
             Dictionary with video metadata (duration, resolution, etc.)
         """
