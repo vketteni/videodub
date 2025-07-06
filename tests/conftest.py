@@ -10,20 +10,15 @@ import pytest
 
 from videodub import (
     FileStorageService,
-    HybridTranscriptProcessingService,
     OpenAITranslationService,
     OpenAITTSService,
     PipelineConfig,
-    ProcessedSegment,
-    ProcessingConfig,
-    ProcessingMode,
     TranscriptSegment,
-    TranslationPipeline,
     TranslationSegment,
     TTSEngine,
     VideoMetadata,
-    YouTubeScrapingService,
 )
+
 
 
 @pytest.fixture(scope="session")
@@ -115,25 +110,6 @@ def storage_service(temp_dir: Path) -> FileStorageService:
 
 
 @pytest.fixture
-def transcript_processing_service() -> HybridTranscriptProcessingService:
-    """Transcript processing service for testing."""
-    return HybridTranscriptProcessingService()
-
-
-@pytest.fixture
-def mock_video_service() -> Mock:
-    """Mock video scraping service."""
-    service = Mock(spec=YouTubeScrapingService)
-
-    # Configure async methods
-    service.scrape_video = AsyncMock()
-    service.scrape_audio_only = AsyncMock()
-    service.get_transcript = AsyncMock()
-
-    return service
-
-
-@pytest.fixture
 def mock_translation_service() -> Mock:
     """Mock translation service."""
     service = Mock(spec=OpenAITranslationService)
@@ -157,24 +133,6 @@ def mock_tts_service() -> Mock:
     service.get_supported_voices = Mock(return_value=["alloy", "echo"])
 
     return service
-
-
-@pytest.fixture
-def mock_pipeline(
-    mock_video_service: Mock,
-    mock_translation_service: Mock,
-    mock_tts_service: Mock,
-    storage_service: FileStorageService,
-    pipeline_config: PipelineConfig,
-) -> TranslationPipeline:
-    """Mock translation pipeline with all services mocked."""
-    return TranslationPipeline(
-        video_service=mock_video_service,
-        translation_service=mock_translation_service,
-        tts_service=mock_tts_service,
-        storage_service=storage_service,
-        config=pipeline_config,
-    )
 
 
 @pytest.fixture

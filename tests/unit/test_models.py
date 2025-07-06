@@ -7,14 +7,10 @@ import pytest
 
 from videodub.core.exceptions import ValidationError
 from videodub.core.models import (
-    AudioGenerationJob,
     PipelineConfig,
-    ProcessedSegment,
-    ProcessingMode,
     ProcessingResult,
     ProcessingStatus,
     TranscriptSegment,
-    TranslationJob,
     TranslationSegment,
     TTSEngine,
     VideoMetadata,
@@ -238,91 +234,3 @@ class TestPipelineConfig:
         assert temp_dir_path.exists()
 
 
-class TestTranslationJob:
-    """Test TranslationJob model."""
-
-    def test_create_translation_job(self, sample_transcript_segments, temp_dir):
-        """Test creating a translation job."""
-        job = TranslationJob(
-            video_id="test123",
-            segments=sample_transcript_segments,
-            target_language="es",
-            tts_engine=TTSEngine.OPENAI,
-            output_directory=temp_dir,
-        )
-
-        assert job.video_id == "test123"
-        assert job.segments == sample_transcript_segments
-        assert job.target_language == "es"
-        assert job.tts_engine == TTSEngine.OPENAI
-        assert job.output_directory == temp_dir
-        assert isinstance(job.created_at, datetime)
-        assert job.translated_segments == []
-
-    def test_translation_job_progress(self, sample_transcript_segments, temp_dir):
-        """Test translation job progress tracking."""
-        job = TranslationJob(
-            video_id="test123",
-            segments=sample_transcript_segments,
-            target_language="es",
-            tts_engine=TTSEngine.OPENAI,
-            output_directory=temp_dir,
-        )
-
-        assert job.total_segments == 3
-        assert job.completed_segments == 0
-        assert job.progress_percentage == 0.0
-
-        # Add a translated segment
-        translated = TranslationSegment(
-            original_segment=sample_transcript_segments[0],
-            translated_text="Translated text",
-        )
-        job.add_translated_segment(translated)
-
-        assert job.completed_segments == 1
-        assert job.progress_percentage == pytest.approx(33.33, rel=1e-2)
-
-
-class TestAudioGenerationJob:
-    """Test AudioGenerationJob model."""
-
-    def test_create_audio_generation_job(self, sample_translation_segments, temp_dir):
-        """Test creating an audio generation job."""
-        job = AudioGenerationJob(
-            segments=sample_translation_segments,
-            output_directory=temp_dir,
-            language="es",
-            tts_engine=TTSEngine.OPENAI,
-        )
-
-        assert job.segments == sample_translation_segments
-        assert job.output_directory == temp_dir
-        assert job.language == "es"
-        assert job.tts_engine == TTSEngine.OPENAI
-        assert job.audio_format == "wav"
-        assert isinstance(job.created_at, datetime)
-        assert job.generated_files == []
-
-    def test_audio_generation_job_completion(
-        self, sample_translation_segments, temp_dir
-    ):
-        """Test audio generation job completion tracking."""
-        job = AudioGenerationJob(
-            segments=sample_translation_segments,
-            output_directory=temp_dir,
-            language="es",
-            tts_engine=TTSEngine.OPENAI,
-        )
-
-        assert not job.is_complete
-
-        # Add generated files
-        job.add_generated_file(temp_dir / "file1.wav")
-        assert not job.is_complete
-
-        job.add_generated_file(temp_dir / "file2.wav")
-        assert not job.is_complete
-
-        job.add_generated_file(temp_dir / "file3.wav")
-        assert job.is_complete
