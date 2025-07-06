@@ -1,7 +1,6 @@
 """Translation service implementation."""
 
 import asyncio
-from typing import AsyncIterator, List, Optional
 
 import structlog
 
@@ -9,8 +8,6 @@ from ..adapters.openai_adapter import OpenAIAdapter
 from ..config.validation import validate_language_code, validate_text_length
 from ..core.exceptions import APIError, RateLimitError, TranslationError
 from ..core.interfaces import TranslationService
-from ..core.models import TranscriptSegment, TranslationJob, TranslationSegment
-from .transcript import HybridTranscriptProcessingService, ProcessingConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -146,139 +143,71 @@ class OpenAITranslationService(TranslationService):
                 logger.error("Translation failed after all retries", error=str(e))
                 raise TranslationError(f"Translation failed: {str(e)}")
 
-    async def translate_segments(
-        self, segments: List[TranscriptSegment], target_language: str
-    ) -> List[TranslationSegment]:
+    async def translate_batch(
+        self, texts: list[str], target_language: str
+    ) -> list[str]:
         """
-        Translate multiple transcript segments.
+        Translate multiple text strings.
 
         Args:
-            segments: List of transcript segments to translate
+            texts: List of text strings to translate
             target_language: Target language code
 
         Returns:
-            List of translated segments
+            List of translated text strings
 
         Raises:
             TranslationError: If translation fails
         """
         validate_language_code(target_language)
 
-        if not segments:
+        if not texts:
             return []
 
         logger.info(
             "Starting batch translation",
             target_language=target_language,
-            segment_count=len(segments),
+            text_count=len(texts),
         )
 
-        translated_segments = []
-
-        # Process segments with concurrency control
+        # Process texts with concurrency control
         semaphore = asyncio.Semaphore(5)  # Limit concurrent requests
 
-        async def translate_segment(segment: TranscriptSegment) -> TranslationSegment:
+        async def translate_single_text(text: str) -> str:
             async with semaphore:
                 try:
-                    translated_text = await self.translate_text(
-                        segment.text, target_language
-                    )
-                    return TranslationSegment(
-                        original_segment=segment,
-                        translated_text=translated_text,
-                        language=target_language,
-                    )
+                    return await self.translate_text(text, target_language)
                 except Exception as e:
                     logger.error(
-                        "Failed to translate segment",
-                        segment_start=segment.start_time,
-                        segment_text=segment.text[:50],
+                        "Failed to translate text",
+                        text=text[:50],
                         error=str(e),
                     )
                     # Return fallback translation
-                    return TranslationSegment(
-                        original_segment=segment,
-                        translated_text=f"[Translation failed: {segment.text}]",
-                        language=target_language,
-                    )
+                    return f"[Translation failed: {text}]"
 
         # Execute translations concurrently
-        tasks = [translate_segment(segment) for segment in segments]
-        translated_segments = await asyncio.gather(*tasks, return_exceptions=False)
+        tasks = [translate_single_text(text) for text in texts]
+        translated_texts = await asyncio.gather(*tasks, return_exceptions=False)
 
         successful_translations = len(
             [
-                seg
-                for seg in translated_segments
-                if not seg.translated_text.startswith("[Translation failed:")
+                text
+                for text in translated_texts
+                if not text.startswith("[Translation failed:")
             ]
         )
 
         logger.info(
             "Batch translation completed",
             target_language=target_language,
-            total_segments=len(segments),
+            total_texts=len(texts),
             successful_translations=successful_translations,
-            failed_translations=len(segments) - successful_translations,
+            failed_translations=len(texts) - successful_translations,
         )
 
-        return translated_segments
+        return translated_texts
 
-    async def translate_batch(
-        self, job: TranslationJob
-    ) -> AsyncIterator[TranslationSegment]:
-        """
-        Translate segments in batches with progress tracking.
-
-        Args:
-            job: Translation job with segments to process
-
-        Yields:
-            Translated segments as they are completed
-
-        Raises:
-            TranslationError: If translation fails
-        """
-        validate_language_code(job.target_language)
-
-        logger.info(
-            "Starting translation job",
-            video_id=job.video_id,
-            target_language=job.target_language,
-            total_segments=job.total_segments,
-        )
-
-        # Process in smaller batches to provide progress updates
-        batch_size = 10
-
-        for i in range(0, len(job.segments), batch_size):
-            batch_segments = job.segments[i : i + batch_size]
-
-            logger.debug(
-                "Processing translation batch",
-                batch_start=i,
-                batch_size=len(batch_segments),
-                total_segments=job.total_segments,
-            )
-
-            # Translate batch
-            translated_batch = await self.translate_segments(
-                batch_segments, job.target_language
-            )
-
-            # Yield translated segments
-            for translated_segment in translated_batch:
-                job.add_translated_segment(translated_segment)
-                yield translated_segment
-
-        logger.info(
-            "Translation job completed",
-            video_id=job.video_id,
-            target_language=job.target_language,
-            completed_segments=job.completed_segments,
-            progress=job.progress_percentage,
-        )
 
 
 class FallbackTranslationService(TranslationService):
@@ -323,55 +252,26 @@ class FallbackTranslationService(TranslationService):
         )
         return f"{prefix}{text}"
 
-    async def translate_segments(
-        self, segments: List[TranscriptSegment], target_language: str
-    ) -> List[TranslationSegment]:
+    async def translate_batch(
+        self, texts: list[str], target_language: str
+    ) -> list[str]:
         """
-        Apply language prefix to all segments.
+        Apply language prefix to all text strings.
 
         Args:
-            segments: List of transcript segments
+            texts: List of text strings
             target_language: Target language code
 
         Returns:
-            List of "translated" segments with prefixes
+            List of "translated" text strings with prefixes
         """
         validate_language_code(target_language)
 
-        translated_segments = []
+        translated_texts = []
 
-        for segment in segments:
-            translated_text = await self.translate_text(segment.text, target_language)
-            translated_segments.append(
-                TranslationSegment(
-                    original_segment=segment,
-                    translated_text=translated_text,
-                    language=target_language,
-                )
-            )
+        for text in texts:
+            translated_text = await self.translate_text(text, target_language)
+            translated_texts.append(translated_text)
 
-        return translated_segments
+        return translated_texts
 
-    async def translate_batch(
-        self, job: TranslationJob
-    ) -> AsyncIterator[TranslationSegment]:
-        """
-        Process translation job with fallback method.
-
-        Args:
-            job: Translation job
-
-        Yields:
-            Translated segments
-        """
-        for segment in job.segments:
-            translated_text = await self.translate_text(
-                segment.text, job.target_language
-            )
-            translated_segment = TranslationSegment(
-                original_segment=segment,
-                translated_text=translated_text,
-                language=job.target_language,
-            )
-            job.add_translated_segment(translated_segment)
-            yield translated_segment

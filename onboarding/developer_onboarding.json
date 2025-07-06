@@ -58,7 +58,7 @@
           {
             "adr": "0005",
             "title": "Pipeline Step Separation and Responsibility Alignment",
-            "status": "In Progress - Phase 1 Complete",
+            "status": "In Progress - Phase 2 Complete",
             "relevance": "Fundamental pipeline architecture redesign"
           }
         ]
@@ -95,15 +95,28 @@
             "DataExtractionError exception (src/videodub/core/exceptions.py)",
             "Comprehensive test suite (tests/unit/test_data_extraction.py)"
           ]
-        }
-      ],
-      "remaining_phases": [
+        },
         {
           "phase": 2,
           "name": "Translation Service Refactoring",
-          "description": "Refactor TranslationService to pure text translation",
-          "status": "Pending"
-        },
+          "status": "Complete",
+          "deliverables": [
+            "Refactored TranslationService interface to pure text-to-text (src/videodub/core/interfaces.py)",
+            "Updated OpenAITranslationService implementation (src/videodub/services/translator.py)",
+            "Updated FallbackTranslationService implementation (src/videodub/services/translator.py)",
+            "Removed all timing logic and segment-based methods",
+            "Comprehensive test suite (tests/unit/test_translation_service.py)",
+            "18 tests covering all functionality, edge cases, and interface compliance"
+          ],
+          "key_changes": [
+            "translate_text(text: str, target_language: str) -> str",
+            "translate_batch(texts: list[str], target_language: str) -> list[str]",
+            "Removed translate_segments() and segment-based translate_batch()",
+            "Clean separation: List[str] → TranslationService → List[str]"
+          ]
+        }
+      ],
+      "remaining_phases": [
         {
           "phase": 3,
           "name": "Alignment Service Creation",
@@ -161,12 +174,13 @@
         "component": "TranslationService",
         "file_path": "src/videodub/services/translator.py",
         "implementation": "OpenAITranslationService",
-        "input": ["ProcessedText", "TargetLanguage"],
-        "output": ["TranslatedText"],
+        "input": ["List[str]"],
+        "output": ["List[str]"],
         "description": "Pure text-to-text translation using OpenAI GPT models",
-        "status": "Needs Refactoring - Phase 2 Pending",
+        "status": "Implemented - Phase 2 Complete",
         "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"],
-        "planned_changes": ["Remove timing logic", "Focus on pure translation", "Accept processed text input"]
+        "interface_methods": ["translate_text()", "translate_batch()"],
+        "features": ["Concurrent batch processing", "Error handling with fallbacks", "Language validation", "Both OpenAI and Fallback implementations"]
       },
       {
         "step": 3,

@@ -140,7 +140,6 @@ def mock_translation_service() -> Mock:
 
     # Configure async methods
     service.translate_text = AsyncMock()
-    service.translate_segments = AsyncMock()
     service.translate_batch = AsyncMock()
 
     return service

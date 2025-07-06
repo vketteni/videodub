@@ -143,36 +143,18 @@ class TranslationService(ABC):
         pass
 
     @abstractmethod
-    async def translate_segments(
-        self, segments: List[TranscriptSegment], target_language: str
-    ) -> List[TranslationSegment]:
+    async def translate_batch(
+        self, texts: list[str], target_language: str
+    ) -> list[str]:
         """
-        Translate multiple transcript segments.
+        Translate multiple text strings.
 
         Args:
-            segments: List of transcript segments to translate
+            texts: List of text strings to translate
             target_language: Target language code
 
         Returns:
-            List of translated segments
-
-        Raises:
-            TranslationError: If translation fails
-        """
-        pass
-
-    @abstractmethod
-    async def translate_batch(
-        self, job: TranslationJob
-    ) -> AsyncIterator[TranslationSegment]:
-        """
-        Translate segments in batches with progress tracking.
-
-        Args:
-            job: Translation job with segments to process
-
-        Yields:
-            Translated segments as they are completed
+            List of translated text strings
 
         Raises:
             TranslationError: If translation fails
