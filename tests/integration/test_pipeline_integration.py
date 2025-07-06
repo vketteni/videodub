@@ -168,7 +168,7 @@ class TestPipelineIntegration:
         for audio_file in audio_files:
             audio_file.write_text("fake audio")
         
-        async def mock_generate_batch_audio(job):
+        async def mock_generate_batch_audio(segments, output_directory, language, voice=None):
             for audio_file in audio_files:
                 yield audio_file
         

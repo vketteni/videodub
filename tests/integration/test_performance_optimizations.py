@@ -311,13 +311,13 @@ class TestPerformanceOptimizations:
                 # Mock TTS with concurrent optimization
                 tts_service = Mock()
                 
-                async def generate_batch_audio(job):
+                async def generate_batch_audio(segments, output_directory, language, voice=None):
                     # Simulate concurrent generation (3 at a time)
-                    self.api_calls["tts"] += len(job.segments)
-                    concurrent_batches = (len(job.segments) + 2) // 3
+                    self.api_calls["tts"] += len(segments)
+                    concurrent_batches = (len(segments) + 2) // 3
                     await asyncio.sleep(0.05 * concurrent_batches)  # Optimized timing
                     
-                    for i, segment in enumerate(job.segments):
+                    for i, segment in enumerate(segments):
                         audio_path = tmp_path / f"optimized_audio_{i}.wav"
                         audio_path.write_text("fake audio")
                         yield audio_path

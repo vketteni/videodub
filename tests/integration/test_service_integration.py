@@ -70,7 +70,6 @@ class TestServiceIntegration:
             timing_metadata=timing_metadata,
             source_type=SourceType.YOUTUBE,
             extraction_quality=0.9,
-            created_at=None,
         )
 
     @pytest.mark.asyncio
@@ -102,7 +101,6 @@ class TestServiceIntegration:
             ),
             source_type=SourceType.YOUTUBE,
             extraction_quality=0.9,
-            created_at=None,
         )
         
         data_service.extract_from_url = AsyncMock(return_value=transcript)
@@ -154,25 +152,26 @@ class TestServiceIntegration:
                     end_time=5.0,
                     original_text="Hello world, this is a test.",
                     translated_text="Hola mundo, esta es una prueba.",
-                    confidence=0.95,
+                    alignment_confidence=0.95,
                 ),
                 TimedTranslationSegment(
                     start_time=5.0,
                     end_time=10.0,
                     original_text="This is the second segment.",
                     translated_text="Este es el segundo segmento.",
-                    confidence=0.92,
+                    alignment_confidence=0.92,
                 ),
                 TimedTranslationSegment(
                     start_time=10.0,
                     end_time=15.0,
                     original_text="And this is the final segment.",
                     translated_text="Y este es el segmento final.",
-                    confidence=0.88,
+                    alignment_confidence=0.88,
                 ),
             ],
-            video_metadata=sample_timed_transcript.video_metadata,
-            alignment_strategy=AlignmentStrategy.HYBRID,
+            original_transcript=sample_timed_transcript,
+            target_language="es",
+            alignment_config=AlignmentConfig(strategy=AlignmentStrategy.HYBRID),
             alignment_evaluation=AlignmentEvaluation(
                 strategy=AlignmentStrategy.HYBRID,
                 timing_accuracy=0.95,
@@ -180,10 +179,10 @@ class TestServiceIntegration:
                 boundary_alignment=0.88,
                 overall_score=0.92,
                 execution_time=0.15,
-                metadata={},
+                segment_count=3,
+                average_confidence=0.92,
             ),
-            target_language="es",
-            created_at=None,
+            timing_metadata=sample_timed_transcript.timing_metadata,
         )
         
         alignment_service.align_translation = AsyncMock(return_value=aligned_translation)
@@ -230,11 +229,26 @@ class TestServiceIntegration:
                     end_time=5.0,
                     original_text="Hello world, this is a test.",
                     translated_text="Hola mundo, esta es una prueba.",
-                    confidence=0.90,
+                    alignment_confidence=0.90,
+                ),
+                TimedTranslationSegment(
+                    start_time=5.0,
+                    end_time=10.0,
+                    original_text="This is the second segment.",
+                    translated_text="Este es el segundo segmento.",
+                    alignment_confidence=0.85,
+                ),
+                TimedTranslationSegment(
+                    start_time=10.0,
+                    end_time=15.0,
+                    original_text="And this is the final segment.",
+                    translated_text="Y este es el segmento final.",
+                    alignment_confidence=0.88,
                 ),
             ],
-            video_metadata=sample_timed_transcript.video_metadata,
-            alignment_strategy=AlignmentStrategy.LENGTH_BASED,
+            original_transcript=sample_timed_transcript,
+            target_language="es",
+            alignment_config=AlignmentConfig(strategy=AlignmentStrategy.LENGTH_BASED),
             alignment_evaluation=AlignmentEvaluation(
                 strategy=AlignmentStrategy.LENGTH_BASED,
                 timing_accuracy=0.88,
@@ -242,10 +256,10 @@ class TestServiceIntegration:
                 boundary_alignment=0.85,
                 overall_score=0.88,
                 execution_time=0.05,
-                metadata={},
+                segment_count=3,
+                average_confidence=0.92,
             ),
-            target_language="es",
-            created_at=None,
+            timing_metadata=sample_timed_transcript.timing_metadata,
         )
         
         hybrid_result = TimedTranslation(
@@ -255,11 +269,26 @@ class TestServiceIntegration:
                     end_time=5.0,
                     original_text="Hello world, this is a test.",
                     translated_text="Hola mundo, esta es una prueba.",
-                    confidence=0.95,
+                    alignment_confidence=0.95,
+                ),
+                TimedTranslationSegment(
+                    start_time=5.0,
+                    end_time=10.0,
+                    original_text="This is the second segment.",
+                    translated_text="Este es el segundo segmento.",
+                    alignment_confidence=0.92,
+                ),
+                TimedTranslationSegment(
+                    start_time=10.0,
+                    end_time=15.0,
+                    original_text="And this is the final segment.",
+                    translated_text="Y este es el segmento final.",
+                    alignment_confidence=0.90,
                 ),
             ],
-            video_metadata=sample_timed_transcript.video_metadata,
-            alignment_strategy=AlignmentStrategy.HYBRID,
+            original_transcript=sample_timed_transcript,
+            target_language="es",
+            alignment_config=AlignmentConfig(strategy=AlignmentStrategy.HYBRID),
             alignment_evaluation=AlignmentEvaluation(
                 strategy=AlignmentStrategy.HYBRID,
                 timing_accuracy=0.95,
@@ -267,10 +296,10 @@ class TestServiceIntegration:
                 boundary_alignment=0.88,
                 overall_score=0.92,
                 execution_time=0.15,
-                metadata={},
+                segment_count=3,
+                average_confidence=0.92,
             ),
-            target_language="es",
-            created_at=None,
+            timing_metadata=sample_timed_transcript.timing_metadata,
         )
         
         # Mock alignment service methods
@@ -280,8 +309,12 @@ class TestServiceIntegration:
             hybrid_result.alignment_evaluation,
         ])
         
-        # Test A/B comparison
-        translated_texts = ["Hola mundo, esta es una prueba."]
+        # Test A/B comparison - provide translations for all 3 segments
+        translated_texts = [
+            "Hola mundo, esta es una prueba.",
+            "Este es el segundo segmento.", 
+            "Y este es el segmento final."
+        ]
         
         # Test both strategies
         length_config = AlignmentConfig(strategy=AlignmentStrategy.LENGTH_BASED)
@@ -382,10 +415,10 @@ class TestServiceIntegration:
         # Track resource usage
         resource_usage = {"files_created": 0, "connections_opened": 0}
         
-        def track_resource_creation():
+        def track_resource_creation(url):
             resource_usage["files_created"] += 1
         
-        def track_connection_opening():
+        def track_connection_opening(texts, target_language):
             resource_usage["connections_opened"] += 1
         
         # Mock service methods with resource tracking

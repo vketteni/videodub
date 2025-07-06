@@ -148,11 +148,17 @@ class TestPerformanceIntegration:
         
         alignment_service.align_translation = mock_align_translation
         
+        # Mock compare_alignments method
+        async def mock_compare_alignments(timed_translations):
+            return [translation.alignment_evaluation for translation in timed_translations]
+        
+        alignment_service.compare_alignments = mock_compare_alignments
+        
         # Mock TTSService with realistic delay
         tts_service = Mock(spec=TTSService)
         
-        async def mock_generate_batch_audio(job):
-            for i, segment in enumerate(job.segments):
+        async def mock_generate_batch_audio(segments, output_directory, language, voice=None):
+            for i, segment in enumerate(segments):
                 await asyncio.sleep(0.1)  # 100ms per audio file
                 audio_path = tmp_path / f"audio_{i}.wav"
                 audio_path.write_text("fake audio data")

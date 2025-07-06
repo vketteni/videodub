@@ -179,7 +179,7 @@ class TestNewTranslationPipeline:
         mock_services["alignment"].align_translation = AsyncMock(
             return_value=sample_timed_translation
         )
-        async def mock_audio_generator(job):
+        async def mock_audio_generator(segments, output_directory, language, voice=None):
             yield Path("/tmp/audio1.wav")
             yield Path("/tmp/audio2.wav")
             yield Path("/tmp/audio3.wav")
