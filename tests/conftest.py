@@ -4,25 +4,25 @@ import asyncio
 import tempfile
 from pathlib import Path
 from typing import AsyncGenerator, Generator
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from videodub import (
-    PipelineConfig,
-    VideoMetadata,
-    TranscriptSegment,
-    ProcessedSegment,
-    TranslationSegment,
-    ProcessingMode,
-    TTSEngine,
     FileStorageService,
     HybridTranscriptProcessingService,
-    ProcessingConfig,
     OpenAITranslationService,
     OpenAITTSService,
-    YouTubeScrapingService,
+    PipelineConfig,
+    ProcessedSegment,
+    ProcessingConfig,
+    ProcessingMode,
+    TranscriptSegment,
     TranslationPipeline,
+    TranslationSegment,
+    TTSEngine,
+    VideoMetadata,
+    YouTubeScrapingService,
 )
 
 
@@ -52,7 +52,7 @@ def sample_video_metadata() -> VideoMetadata:
         channel="Test Channel",
         upload_date="2024-01-01",
         view_count=1000,
-        description="Test video description"
+        description="Test video description",
     )
 
 
@@ -61,20 +61,14 @@ def sample_transcript_segments() -> list[TranscriptSegment]:
     """Sample transcript segments for testing."""
     return [
         TranscriptSegment(
-            start_time=0.0,
-            end_time=3.0,
-            text="Hello, this is a test video."
+            start_time=0.0, end_time=3.0, text="Hello, this is a test video."
         ),
         TranscriptSegment(
             start_time=3.0,
             end_time=6.0,
-            text="We are testing the translation pipeline."
+            text="We are testing the translation pipeline.",
         ),
-        TranscriptSegment(
-            start_time=6.0,
-            end_time=9.0,
-            text="Thank you for watching!"
-        )
+        TranscriptSegment(start_time=6.0, end_time=9.0, text="Thank you for watching!"),
     ]
 
 
@@ -85,18 +79,18 @@ def sample_translation_segments(sample_transcript_segments) -> list[TranslationS
         TranslationSegment(
             original_segment=sample_transcript_segments[0],
             translated_text="Hola, este es un video de prueba.",
-            language="es"
+            language="es",
         ),
         TranslationSegment(
             original_segment=sample_transcript_segments[1],
             translated_text="Estamos probando el pipeline de traducción.",
-            language="es"
+            language="es",
         ),
         TranslationSegment(
             original_segment=sample_transcript_segments[2],
             translated_text="¡Gracias por mirar!",
-            language="es"
-        )
+            language="es",
+        ),
     ]
 
 
@@ -110,7 +104,7 @@ def pipeline_config(temp_dir: Path) -> PipelineConfig:
         max_concurrent_requests=2,
         request_timeout=10,
         temp_directory=temp_dir / "temp",
-        audio_format="wav"
+        audio_format="wav",
     )
 
 
@@ -130,12 +124,12 @@ def transcript_processing_service() -> HybridTranscriptProcessingService:
 def mock_video_service() -> Mock:
     """Mock video scraping service."""
     service = Mock(spec=YouTubeScrapingService)
-    
+
     # Configure async methods
     service.scrape_video = AsyncMock()
     service.scrape_audio_only = AsyncMock()
     service.get_transcript = AsyncMock()
-    
+
     return service
 
 
@@ -143,12 +137,12 @@ def mock_video_service() -> Mock:
 def mock_translation_service() -> Mock:
     """Mock translation service."""
     service = Mock(spec=OpenAITranslationService)
-    
+
     # Configure async methods
     service.translate_text = AsyncMock()
     service.translate_segments = AsyncMock()
     service.translate_batch = AsyncMock()
-    
+
     return service
 
 
@@ -156,13 +150,13 @@ def mock_translation_service() -> Mock:
 def mock_tts_service() -> Mock:
     """Mock TTS service."""
     service = Mock(spec=OpenAITTSService)
-    
+
     # Configure async methods
     service.generate_audio = AsyncMock()
     service.generate_batch_audio = AsyncMock()
     service.get_supported_languages = Mock(return_value=["en", "es", "fr"])
     service.get_supported_voices = Mock(return_value=["alloy", "echo"])
-    
+
     return service
 
 
@@ -172,7 +166,7 @@ def mock_pipeline(
     mock_translation_service: Mock,
     mock_tts_service: Mock,
     storage_service: FileStorageService,
-    pipeline_config: PipelineConfig
+    pipeline_config: PipelineConfig,
 ) -> TranslationPipeline:
     """Mock translation pipeline with all services mocked."""
     return TranslationPipeline(
@@ -180,7 +174,7 @@ def mock_pipeline(
         translation_service=mock_translation_service,
         tts_service=mock_tts_service,
         storage_service=storage_service,
-        config=pipeline_config
+        config=pipeline_config,
     )
 
 
@@ -201,28 +195,24 @@ def sample_video_url() -> str:
 async def async_storage_with_data(
     storage_service: FileStorageService,
     sample_video_metadata: VideoMetadata,
-    sample_translation_segments: list[TranslationSegment]
+    sample_translation_segments: list[TranslationSegment],
 ) -> FileStorageService:
     """Storage service with sample data."""
     # Save sample data
     await storage_service.save_metadata("test_video_123", sample_video_metadata)
-    await storage_service.save_translation_data("test_video_123", sample_translation_segments)
-    
+    await storage_service.save_translation_data(
+        "test_video_123", sample_translation_segments
+    )
+
     return storage_service
 
 
 # Marks for different test types
 def pytest_configure(config):
     """Configure pytest with custom marks."""
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
     config.addinivalue_line(
         "markers", "requires_api: mark test as requiring external API"
     )
@@ -232,9 +222,9 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to skip API tests if no keys available."""
     import os
-    
+
     skip_api = pytest.mark.skip(reason="API key not available")
-    
+
     for item in items:
         if "requires_api" in item.keywords:
             if not os.getenv("OPENAI_API_KEY"):
