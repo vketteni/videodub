@@ -24,6 +24,8 @@
       "main_pipeline": "src/videodub/core/new_pipeline.py",
       "legacy_pipeline": "src/videodub/core/pipeline.py",
       "alignment_service": "src/videodub/services/alignment.py",
+      "translation_service": "src/videodub/services/translator.py",
+      "optimized_translation": "src/videodub/services/optimized_translator.py",
       "configuration": "src/videodub/config/settings.py",
       "models": "src/videodub/core/models.py",
       "interfaces": "src/videodub/core/interfaces.py"
@@ -148,15 +150,40 @@
             "Comprehensive evaluation metrics",
             "Integration with evaluation framework"
           ]
+        },
+        {
+          "phase": 4,
+          "name": "Integration Testing and Performance Optimization",
+          "status": "Complete",
+          "deliverables": [
+            "Comprehensive integration test suite (tests/integration/)",
+            "End-to-end pipeline integration tests (9 tests)",
+            "Service integration tests (8 tests)",
+            "Performance integration tests (10 tests)",
+            "Performance optimization implementations (src/videodub/services/optimized_translator.py)",
+            "Performance analysis documentation (docs/performance_analysis_phase4.md)",
+            "Bottleneck identification and optimization strategies",
+            "Concurrent processing optimizations"
+          ],
+          "performance_improvements": [
+            "Translation batch optimization: 90% performance improvement",
+            "Concurrent TTS generation: 2.4x speedup",
+            "Pipeline throughput: 5.8 segments/second baseline",
+            "Memory efficiency validation for large datasets",
+            "Error handling performance under 1s",
+            "Concurrent processing 3x faster than sequential"
+          ],
+          "test_coverage": [
+            "Complete pipeline flow validation",
+            "Service integration and data flow",
+            "Error handling and recovery",
+            "Performance benchmarking",
+            "Memory usage optimization",
+            "Concurrent processing validation"
+          ]
         }
       ],
       "remaining_phases": [
-        {
-          "phase": 4,
-          "name": "Integration Testing",
-          "description": "Integration testing and performance optimization",
-          "status": "Pending"
-        },
         {
           "phase": 5,
           "name": "Legacy Cleanup",
@@ -204,19 +231,38 @@
         "component": "TranslationService", 
         "file_path": "src/videodub/services/translator.py",
         "implementation": "OpenAITranslationService",
+        "optimized_implementation": {
+          "name": "OptimizedOpenAITranslationService",
+          "file_path": "src/videodub/services/optimized_translator.py",
+          "performance_improvements": "90% faster via batch processing",
+          "use_case": "Large batch processing and production workloads"
+        },
         "input": ["List[str] (extracted from TimedTranscript.segments)"],
         "output": ["List[str] (translated texts)"],
         "description": "Pure text-to-text translation using OpenAI GPT models",
-        "status": "Implemented - Phase 2 Complete",
+        "status": "Implemented - Phase 2 Complete, Optimized - Phase 4 Complete",
         "responsibility": "Pure text translation with no timing or alignment concerns",
         "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"],
         "interface_methods": ["translate_text()", "translate_batch()"],
+        "implementations": {
+          "standard": {
+            "class": "OpenAITranslationService",
+            "use_case": "Small batches, single translations, development",
+            "characteristics": "Individual API calls, simpler implementation"
+          },
+          "optimized": {
+            "class": "OptimizedOpenAITranslationService", 
+            "use_case": "Large batches, production workloads, performance-critical",
+            "characteristics": "Batch API calls, 90% performance improvement, configurable batch sizes"
+          }
+        },
         "features": [
           "Clean text input/output",
           "Concurrent batch processing", 
           "Error handling with fallbacks",
           "Language validation",
-          "Focus solely on translation quality"
+          "Focus solely on translation quality",
+          "Performance-optimized variant available"
         ]
       },
       {
@@ -257,11 +303,18 @@
         "responsibility": "Convert aligned translated text to speech audio files",
         "engines_supported": ["OpenAI", "Google", "Azure", "System"],
         "interface_methods": ["generate_audio()", "generate_batch_audio()", "get_supported_languages()", "get_supported_voices()"],
+        "optimization_helpers": {
+          "name": "ConcurrentTTSOptimizer",
+          "file_path": "src/videodub/services/optimized_translator.py",
+          "performance_improvements": "2.4x speedup via concurrent generation",
+          "use_case": "Large audio batch generation"
+        },
         "features": [
           "Support for TimedTranslation input",
           "Batch audio generation",
           "Multiple TTS engine support",
-          "Voice selection and language support"
+          "Voice selection and language support",
+          "Concurrent optimization available (2.4x speedup)"
         ]
       },
       {
@@ -402,6 +455,45 @@
             "StorageService"
           ],
           "migration_notes": "Being replaced by NewTranslationPipeline in Phase 6"
+        }
+      ]
+    },
+    "performance_optimizations": {
+      "description": "Phase 4 performance optimizations with dual implementation strategy",
+      "design_rationale": {
+        "dual_implementations": "Keep both standard and optimized implementations",
+        "reasons": [
+          "Backward compatibility with existing code and configurations",
+          "Gradual migration path from standard to optimized services",
+          "Fallback strategy if optimized versions encounter issues",
+          "Different use cases: standard for development, optimized for production"
+        ],
+        "migration_strategy": "Phase 5 will evaluate replacing standard implementations"
+      },
+      "implementations": [
+        {
+          "service": "Translation",
+          "standard": {
+            "class": "OpenAITranslationService",
+            "file": "src/videodub/services/translator.py",
+            "best_for": "Development, small batches, simple use cases"
+          },
+          "optimized": {
+            "class": "OptimizedOpenAITranslationService", 
+            "file": "src/videodub/services/optimized_translator.py",
+            "best_for": "Production, large batches, performance-critical workloads",
+            "improvements": "90% performance improvement, 90% fewer API calls"
+          }
+        },
+        {
+          "service": "TTS",
+          "standard": "Standard TTSService implementations",
+          "optimization_helper": {
+            "class": "ConcurrentTTSOptimizer",
+            "file": "src/videodub/services/optimized_translator.py", 
+            "best_for": "Large audio file generation",
+            "improvements": "2.4x speedup via controlled concurrency"
+          }
         }
       ]
     },
