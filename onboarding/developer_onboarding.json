@@ -2,7 +2,8 @@
   "architecture_overview": {
     "description": "This project consists of several interconnected modules that work together to create a complete video translation workflow.",
     "project_info": {
-      "main_entry_point": "src/videodub/core/pipeline.py",
+      "main_entry_point": "src/videodub/core/new_pipeline.py",
+      "legacy_entry_point": "src/videodub/core/pipeline.py",
       "cli_command": "python examples/quick_test.py",
       "package_manager": "poetry",
       "python_version": "3.8+"
@@ -20,7 +21,9 @@
       "install_command": "poetry install"
     },
     "key_files": {
-      "main_pipeline": "src/videodub/core/pipeline.py",
+      "main_pipeline": "src/videodub/core/new_pipeline.py",
+      "legacy_pipeline": "src/videodub/core/pipeline.py",
+      "alignment_service": "src/videodub/services/alignment.py",
       "configuration": "src/videodub/config/settings.py",
       "models": "src/videodub/core/models.py",
       "interfaces": "src/videodub/core/interfaces.py"
@@ -58,7 +61,7 @@
           {
             "adr": "0005",
             "title": "Pipeline Step Separation and Responsibility Alignment",
-            "status": "In Progress - Phase 2 Complete",
+            "status": "In Progress - Phase 3 Complete",
             "relevance": "Fundamental pipeline architecture redesign"
           }
         ]
@@ -69,7 +72,7 @@
         "description": "Pipeline step evaluation framework for quality assessment and human review",
         "status": "Phase 1 Complete",
         "usage": "poetry run python3 evaluation/scripts/run_evaluation.py --help",
-        "implemented_steps": ["transcript_processing"],
+        "implemented_steps": ["transcript_processing", "alignment"],
         "planned_steps": ["translation", "tts", "audio_processing"],
         "key_features": [
           "Human-readable before/after comparisons",
@@ -114,15 +117,40 @@
             "Removed translate_segments() and segment-based translate_batch()",
             "Clean separation: List[str] → TranslationService → List[str]"
           ]
+        },
+        {
+          "phase": 3,
+          "name": "Alignment Service Implementation",
+          "status": "Complete",
+          "deliverables": [
+            "AlignmentService interface with A/B testing support (src/videodub/core/interfaces.py)",
+            "TimingAlignmentService implementation (src/videodub/services/alignment.py)",
+            "TimedTranslation, TimedTranslationSegment, AlignmentConfig, AlignmentEvaluation models (src/videodub/core/models.py)",
+            "AlignmentStrategy enum with 5 strategies (LENGTH_BASED, SENTENCE_BOUNDARY, SEMANTIC_SIMILARITY, HYBRID, DYNAMIC_PROGRAMMING)",
+            "AlignmentError exception (src/videodub/core/exceptions.py)",
+            "NewTranslationPipeline with full integration (src/videodub/core/new_pipeline.py)",
+            "Enhanced StorageService interface for new models (src/videodub/core/interfaces.py)",
+            "Comprehensive test suite (tests/unit/test_alignment_service.py, tests/unit/test_new_pipeline.py)",
+            "16 alignment tests + 8 pipeline integration tests covering all strategies and A/B testing"
+          ],
+          "key_changes": [
+            "align_translation(TimedTranscript, List[str], target_language, AlignmentConfig) -> TimedTranslation",
+            "evaluate_alignment() and compare_alignments() for A/B testing",
+            "Multiple alignment strategies with configurable parameters",
+            "Quality metrics: timing_accuracy, text_preservation, boundary_alignment, overall_score",
+            "Integration with existing evaluation framework",
+            "Clean data flow: TimedTranscript + List[str] → TimedTranslation"
+          ],
+          "a_b_testing_features": [
+            "Multiple alignment strategy comparison in single run",
+            "Automated quality scoring and ranking",
+            "Execution time and confidence tracking",
+            "Comprehensive evaluation metrics",
+            "Integration with evaluation framework"
+          ]
         }
       ],
       "remaining_phases": [
-        {
-          "phase": 3,
-          "name": "Alignment Service Creation",
-          "description": "Create AlignmentService for timing synchronization",
-          "status": "Pending"
-        },
         {
           "phase": 4,
           "name": "Integration Testing",
@@ -131,8 +159,14 @@
         },
         {
           "phase": 5,
+          "name": "Legacy Cleanup",
+          "description": "Clean up legacy models and interfaces (ProcessedSegment, etc.)",
+          "status": "Pending"
+        },
+        {
+          "phase": 6,
           "name": "Migration",
-          "description": "Migration of existing workflows",
+          "description": "Migration of existing workflows to new pipeline",
           "status": "Pending"
         }
       ],
@@ -153,68 +187,61 @@
         "output": ["TimedTranscript"],
         "description": "Extracts transcript and timing metadata from video sources (YouTube API, future: speech-to-text)",
         "status": "Implemented - Phase 1 Complete",
-        "models": ["TimedTranscript", "TimingMetadata", "SourceType"],
-        "features": ["Quality scoring", "Timing accuracy analysis", "Source type detection"]
-      },
-      {
-        "step": 1.5,
-        "name": "Video Scraping (Legacy)",
-        "component": "VideoScrapingService",
-        "file_path": "src/videodub/services/scraper.py",
-        "implementation": "YouTubeScrapingService",
-        "input": ["Video URL"],
-        "output": ["VideoMetadata", "TranscriptSegments"],
-        "description": "Downloads video, extracts metadata and transcript using video_scraper package",
-        "status": "Legacy - Being replaced by DataExtractionService",
-        "common_errors": ["Video not found", "No transcript available", "video_scraper package missing"]
+        "responsibility": "Extract all available data from video sources",
+        "models": ["TimedTranscript", "TimingMetadata", "SourceType", "TranscriptSegment", "VideoMetadata"],
+        "interface_methods": ["extract_from_url()", "extract_from_file()", "supports_source()"],
+        "features": [
+          "YouTube API integration",
+          "Quality scoring and timing accuracy analysis", 
+          "Source type detection",
+          "Comprehensive validation",
+          "Future: speech-to-text for raw video"
+        ]
       },
       {
         "step": 2,
         "name": "Translation",
-        "component": "TranslationService",
+        "component": "TranslationService", 
         "file_path": "src/videodub/services/translator.py",
         "implementation": "OpenAITranslationService",
-        "input": ["List[str]"],
-        "output": ["List[str]"],
+        "input": ["List[str] (extracted from TimedTranscript.segments)"],
+        "output": ["List[str] (translated texts)"],
         "description": "Pure text-to-text translation using OpenAI GPT models",
         "status": "Implemented - Phase 2 Complete",
+        "responsibility": "Pure text translation with no timing or alignment concerns",
         "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"],
         "interface_methods": ["translate_text()", "translate_batch()"],
-        "features": ["Concurrent batch processing", "Error handling with fallbacks", "Language validation", "Both OpenAI and Fallback implementations"]
+        "features": [
+          "Clean text input/output",
+          "Concurrent batch processing", 
+          "Error handling with fallbacks",
+          "Language validation",
+          "Focus solely on translation quality"
+        ]
       },
       {
         "step": 3,
         "name": "Alignment",
         "component": "AlignmentService",
-        "file_path": "src/videodub/services/alignment.py",
+        "file_path": "src/videodub/services/alignment.py", 
         "implementation": "TimingAlignmentService",
-        "input": ["TimedTranscript", "TranslatedText"],
+        "input": ["TimedTranscript", "List[str] (translated texts)", "target_language", "AlignmentConfig"],
         "output": ["TimedTranslation"],
-        "description": "Synchronizes translated text with original speech timing metadata",
-        "status": "Not Implemented - Phase 3 Pending",
+        "description": "Synchronizes translated text with original speech timing metadata using configurable alignment strategies",
+        "status": "Implemented - Phase 3 Complete",
+        "responsibility": "Synchronize translated text with original timing, handle segment length mismatches, apply speech timing optimization",
+        "alignment_strategies": ["LENGTH_BASED", "SENTENCE_BOUNDARY", "SEMANTIC_SIMILARITY", "HYBRID", "DYNAMIC_PROGRAMMING"],
+        "supported_strategies": ["LENGTH_BASED", "SENTENCE_BOUNDARY", "HYBRID"],
+        "models": ["TimedTranslation", "TimedTranslationSegment", "AlignmentConfig", "AlignmentEvaluation", "AlignmentStrategy"],
+        "interface_methods": ["align_translation()", "evaluate_alignment()", "compare_alignments()", "get_supported_strategies()"],
         "features": [
-          "Timing preservation logic",
-          "Segment length adjustments",
-          "Quality scoring for alignment accuracy"
-        ]
-      },
-      {
-        "step": 3.5,
-        "name": "Transcript Processing (Legacy)",
-        "component": "TranscriptProcessingService",
-        "file_path": "src/videodub/services/transcript.py",
-        "implementation": "HybridTranscriptProcessingService",
-        "input": ["TranscriptSegments"],
-        "output": ["ProcessedSegments"],
-        "description": "Hybrid processing with rule-based preprocessing and optional AI enhancement for optimal translation quality",
-        "status": "Legacy - Logic being redistributed to Alignment step",
-        "processing_modes": ["RULE_BASED", "AI_ENHANCED", "HYBRID"],
-        "features": [
-          "Sequence tracking for deterministic ordering",
-          "Intelligent segment merging with quality thresholds",
-          "Context-aware sentence reconstruction",
-          "Parallel processing support",
-          "Configurable cost vs quality trade-offs"
+          "Multiple alignment strategies with A/B testing",
+          "Quality scoring: timing_accuracy, text_preservation, boundary_alignment",
+          "Confidence scoring per segment",
+          "Execution time tracking",
+          "Configurable strategy parameters",
+          "Timing preservation and adjustment logic",
+          "Comprehensive evaluation framework integration"
         ]
       },
       {
@@ -222,11 +249,20 @@
         "name": "Text-to-Speech",
         "component": "TTSService",
         "file_path": "src/videodub/services/tts.py",
-        "implementation": "OpenAITTSService",
-        "input": ["TimedTranslation", "TargetLanguage"],
+        "implementation": "OpenAITTSService", 
+        "input": ["TimedTranslation", "target_language"],
         "output": ["AudioFiles"],
         "description": "Generates natural-sounding audio from aligned translated segments using OpenAI TTS or other engines",
-        "engines_supported": ["OpenAI", "Google", "Azure", "System"]
+        "status": "Active - Integrated with new models",
+        "responsibility": "Convert aligned translated text to speech audio files",
+        "engines_supported": ["OpenAI", "Google", "Azure", "System"],
+        "interface_methods": ["generate_audio()", "generate_batch_audio()", "get_supported_languages()", "get_supported_voices()"],
+        "features": [
+          "Support for TimedTranslation input",
+          "Batch audio generation",
+          "Multiple TTS engine support",
+          "Voice selection and language support"
+        ]
       },
       {
         "step": 5,
@@ -235,8 +271,16 @@
         "file_path": "src/videodub/services/audio.py",
         "implementation": "FFmpegAudioProcessingService",
         "input": ["AudioFiles", "TimedTranslation"],
-        "output": ["CombinedAudioFile"],
-        "description": "Combines individual audio segments into a single synchronized audio track"
+        "output": ["CombinedAudioFile"], 
+        "description": "Combines individual audio segments into a single synchronized audio track",
+        "status": "Active - Enhanced for new timing models",
+        "responsibility": "Synchronize and combine translated audio segments",
+        "interface_methods": ["combine_audio_segments()", "adjust_audio_timing()"],
+        "features": [
+          "Timing-aware audio combination",
+          "Audio synchronization with TimedTranslation",
+          "FFmpeg-based processing"
+        ]
       },
       {
         "step": 6,
@@ -247,19 +291,120 @@
         "input": ["OriginalVideo", "CombinedAudioFile"],
         "output": ["DubbedVideo"],
         "description": "Creates final dubbed video by replacing original audio with translated audio using FFmpeg",
-        "dependencies": ["ffmpeg"]
+        "status": "Active",
+        "responsibility": "Combine original video with translated audio track",
+        "dependencies": ["ffmpeg"],
+        "interface_methods": ["create_dubbed_video()", "extract_video_metadata()"],
+        "features": [
+          "Video-audio synchronization",
+          "Multiple video format support",
+          "Quality preservation"
+        ]
       },
       {
         "step": 7,
         "name": "Storage & Result",
         "component": "StorageService",
         "file_path": "src/videodub/services/storage.py",
-        "implementation": "StorageService",
-        "input": ["VideoMetadata", "TimedTranslation", "AudioFiles", "DubbedVideo"],
+        "implementation": "StorageService", 
+        "input": ["VideoMetadata", "TimedTranscript", "TimedTranslation", "AudioFiles", "DubbedVideo"],
         "output": ["ProcessingResult"],
-        "description": "Saves all pipeline outputs and generates processing result with file paths"
+        "description": "Saves all pipeline outputs and generates processing result with file paths",
+        "status": "Enhanced - Phase 3 Complete",
+        "responsibility": "Persist all pipeline data and generate comprehensive processing results",
+        "enhanced_methods": [
+          "save_timed_transcript()", 
+          "save_timed_translation()", 
+          "load_timed_transcript()", 
+          "load_timed_translation()",
+          "save_metadata()",
+          "save_processing_result()"
+        ],
+        "features": [
+          "Support for new alignment models",
+          "Alignment evaluation storage", 
+          "A/B testing result comparison",
+          "Comprehensive file management",
+          "Processing result generation"
+        ]
       }
     ],
+    "legacy_components": [
+      {
+        "name": "Video Scraping (Legacy)",
+        "component": "VideoScrapingService",
+        "file_path": "src/videodub/services/scraper.py",
+        "implementation": "YouTubeScrapingService",
+        "status": "Deprecated - Replaced by DataExtractionService",
+        "migration_target": "DataExtractionService",
+        "common_errors": ["Video not found", "No transcript available", "video_scraper package missing"]
+      },
+      {
+        "name": "Transcript Processing (Legacy)",
+        "component": "TranscriptProcessingService", 
+        "file_path": "src/videodub/services/transcript.py",
+        "implementation": "HybridTranscriptProcessingService",
+        "status": "Deprecated - Logic redistributed to AlignmentService",
+        "migration_target": "AlignmentService",
+        "processing_modes": ["RULE_BASED", "AI_ENHANCED", "HYBRID"],
+        "migration_notes": "Text enhancement logic moved to AlignmentService, timing logic preserved in new alignment strategies"
+      }
+    ],
+    "pipeline_orchestration": {
+      "description": "Pipeline orchestrators that coordinate the execution of multiple services in sequence",
+      "implementations": [
+        {
+          "name": "NewTranslationPipeline",
+          "file_path": "src/videodub/core/new_pipeline.py",
+          "status": "Current - Phase 3 Complete",
+          "description": "Modern pipeline orchestrator with AlignmentService integration and A/B testing support",
+          "architecture": "video → data_extraction → translation → alignment → tts → audio → video",
+          "key_methods": {
+            "process_video()": "Standard video processing with single alignment strategy",
+            "process_video_with_alignment_comparison()": "A/B testing with multiple alignment strategies for evaluation"
+          },
+          "services_orchestrated": [
+            "DataExtractionService",
+            "TranslationService", 
+            "AlignmentService",
+            "TTSService",
+            "AudioProcessingService",
+            "VideoProcessingService",
+            "StorageService"
+          ],
+          "features": [
+            "Clean service separation and dependency injection",
+            "A/B testing with multiple alignment strategies",
+            "Comprehensive error handling and logging",
+            "Quality metrics and performance tracking",
+            "Integration with cost tracking",
+            "Alignment evaluation and comparison reports",
+            "Configurable alignment strategies",
+            "Automated best strategy selection"
+          ],
+          "input": ["Video URL", "AlignmentConfig (optional)"],
+          "output": ["ProcessingResult with alignment evaluation"],
+          "test_coverage": "8 comprehensive integration tests"
+        },
+        {
+          "name": "TranslationPipeline",
+          "file_path": "src/videodub/core/pipeline.py",
+          "status": "Legacy - Pre-Phase 3",
+          "description": "Original pipeline implementation using legacy architecture",
+          "architecture": "video → scraping → transcript_processing → translation → tts → audio → video",
+          "services_orchestrated": [
+            "VideoScrapingService",
+            "TranscriptProcessingService",
+            "TranslationService",
+            "TTSService",
+            "AudioProcessingService", 
+            "VideoProcessingService",
+            "StorageService"
+          ],
+          "migration_notes": "Being replaced by NewTranslationPipeline in Phase 6"
+        }
+      ]
+    },
     "side_processes": [
       {
         "name": "Cost Tracking & Analytics",
