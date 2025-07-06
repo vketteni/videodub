@@ -1,0 +1,1 @@
+Okay let's update @onboarding/developer_onboarding.json to reflect all relevant changes. 

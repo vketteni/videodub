@@ -1,0 +1,1 @@
+hi claude please onboard yourself. First read @onboarding/developer_onboarding.json
