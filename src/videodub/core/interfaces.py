@@ -8,15 +8,11 @@ from .models import (
     AlignmentConfig,
     AlignmentEvaluation,
     AlignmentStrategy,
-    AudioGenerationJob,
-    ProcessedSegment,
-    ProcessingMode,
     ProcessingResult,
     SourceType,
     TimedTranscript,
     TimedTranslation,
     TranscriptSegment,
-    TranslationJob,
     TranslationSegment,
     TTSEngine,
     VideoMetadata,
@@ -72,58 +68,6 @@ class DataExtractionService(ABC):
         pass
 
 
-class VideoScrapingService(ABC):
-    """Abstract interface for video scraping services."""
-
-    @abstractmethod
-    async def scrape_video(
-        self, url: str
-    ) -> Tuple[VideoMetadata, List[TranscriptSegment]]:
-        """
-        Scrape video and extract metadata and transcript.
-
-        Args:
-            url: Video URL to scrape
-
-        Returns:
-            Tuple of video metadata and transcript segments
-
-        Raises:
-            VideoScrapingError: If scraping fails
-        """
-        pass
-
-    @abstractmethod
-    async def scrape_audio_only(self, url: str) -> Tuple[VideoMetadata, Path]:
-        """
-        Scrape only audio from video.
-
-        Args:
-            url: Video URL to scrape
-
-        Returns:
-            Tuple of video metadata and audio file path
-
-        Raises:
-            VideoScrapingError: If scraping fails
-        """
-        pass
-
-    @abstractmethod
-    async def get_transcript(self, url: str) -> List[TranscriptSegment]:
-        """
-        Extract transcript from video.
-
-        Args:
-            url: Video URL
-
-        Returns:
-            List of transcript segments
-
-        Raises:
-            VideoScrapingError: If transcript extraction fails
-        """
-        pass
 
 
 class TranslationService(ABC):
@@ -271,13 +215,20 @@ class TTSService(ABC):
 
     @abstractmethod
     async def generate_batch_audio(
-        self, job: AudioGenerationJob
+        self, 
+        segments: List[TranslationSegment],
+        output_directory: Path,
+        language: str,
+        voice: Optional[str] = None
     ) -> AsyncIterator[Path]:
         """
         Generate audio for multiple segments.
 
         Args:
-            job: Audio generation job
+            segments: Translation segments to generate audio for
+            output_directory: Directory to save audio files
+            language: Language code for TTS
+            voice: Optional voice identifier
 
         Yields:
             Paths to generated audio files
@@ -461,88 +412,8 @@ class StorageService(ABC):
         pass
 
 
-class TranscriptEnhancementService(ABC):
-    """Abstract interface for AI-powered transcript enhancement services."""
-
-    @abstractmethod
-    async def enhance_segment(
-        self,
-        target_segment: ProcessedSegment,
-        previous_segment: Optional[ProcessedSegment] = None,
-        next_segment: Optional[ProcessedSegment] = None,
-    ) -> ProcessedSegment:
-        """
-        Enhance a transcript segment using AI to improve completeness and quality.
-
-        Args:
-            target_segment: The segment to enhance
-            previous_segment: Optional previous segment for context
-            next_segment: Optional next segment for context
-
-        Returns:
-            Enhanced segment with improved text and metadata
-
-        Raises:
-            TranscriptEnhancementError: If enhancement fails
-        """
-        pass
-
-    @abstractmethod
-    async def enhance_segments_batch(
-        self, segments: List[ProcessedSegment], threshold: float = 0.8
-    ) -> List[ProcessedSegment]:
-        """
-        Enhance multiple segments in batch, only processing those below quality threshold.
-
-        Args:
-            segments: List of processed segments
-            threshold: Quality score threshold below which segments are enhanced
-
-        Returns:
-            List of segments with low-quality ones enhanced
-
-        Raises:
-            TranscriptEnhancementError: If enhancement fails
-        """
-        pass
 
 
-class TranscriptProcessingService(ABC):
-    """Abstract interface for transcript processing services."""
-
-    @abstractmethod
-    async def process_transcript(
-        self,
-        segments: List[TranscriptSegment],
-        mode: ProcessingMode = ProcessingMode.HYBRID,
-    ) -> List[ProcessedSegment]:
-        """
-        Process and reconstruct transcript segments for optimal translation.
-
-        Args:
-            segments: Raw transcript segments to process
-            mode: Processing mode (rule-based, AI-enhanced, or hybrid)
-
-        Returns:
-            Processed transcript segments ready for translation
-
-        Raises:
-            TranscriptProcessingError: If processing fails
-        """
-        pass
-
-    @abstractmethod
-    async def validate_segments(self, segments: List[TranscriptSegment]) -> bool:
-        """
-        Validate transcript segments for quality and completeness.
-
-        Args:
-            segments: Transcript segments to validate
-
-        Returns:
-            True if segments are valid
-        """
-        pass
 
 
 class AudioProcessingService(ABC):

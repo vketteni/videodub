@@ -25,12 +25,6 @@ class TTSEngine(Enum):
     SYSTEM = "system"
 
 
-class ProcessingMode(Enum):
-    """Processing modes for transcript processing."""
-
-    RULE_BASED = "rule_based"
-    AI_ENHANCED = "ai_enhanced"
-    HYBRID = "hybrid"
 
 
 class SourceType(Enum):
@@ -128,52 +122,6 @@ class TimedTranscript:
             )
 
 
-@dataclass
-class ProcessedSegment:
-    """A processed transcript segment with enhancement metadata."""
-
-    merged_segments: List[TranscriptSegment]
-    processed_text: str
-    processing_mode: ProcessingMode
-    sequence_number: int
-    original_indices: List[int] = field(default_factory=list)
-    is_sentence_complete: bool = False
-    context_quality_score: Optional[float] = None
-    timing_preserved: bool = True
-    enhancement_metadata: Dict[str, Any] = field(default_factory=dict)
-    ready_for_translation: bool = True
-
-    def __post_init__(self) -> None:
-        """Validate processed segment."""
-        if not self.processed_text.strip():
-            raise ValueError("Processed text cannot be empty")
-        if not self.merged_segments:
-            raise ValueError("Must have at least one merged segment")
-        if self.sequence_number < 0:
-            raise ValueError("Sequence number must be non-negative")
-        if self.context_quality_score is not None:
-            if not 0.0 <= self.context_quality_score <= 1.0:
-                raise ValueError("Context quality score must be between 0.0 and 1.0")
-
-        # Auto-populate original_indices if not provided
-        if not self.original_indices:
-            # This is a fallback - in practice, original_indices should be set explicitly
-            self.original_indices = list(range(len(self.merged_segments)))
-
-    @property
-    def start_time(self) -> float:
-        """Get the earliest start time from merged segments."""
-        return min(s.start_time for s in self.merged_segments)
-
-    @property
-    def end_time(self) -> float:
-        """Get the latest end time from merged segments."""
-        return max(s.end_time for s in self.merged_segments)
-
-    @property
-    def duration(self) -> float:
-        """Get the total duration of the processed segment."""
-        return self.end_time - self.start_time
 
 
 @dataclass
@@ -255,38 +203,6 @@ class PipelineConfig:
             self.temp_directory.mkdir(parents=True, exist_ok=True)
 
 
-@dataclass
-class TranslationJob:
-    """A translation job containing all segments to process."""
-
-    video_id: str
-    segments: List[TranscriptSegment]
-    target_language: str
-    tts_engine: TTSEngine
-    output_directory: Path
-    created_at: datetime = field(default_factory=datetime.now)
-    translated_segments: List[TranslationSegment] = field(default_factory=list)
-
-    def add_translated_segment(self, segment: TranslationSegment) -> None:
-        """Add a translated segment to the job."""
-        self.translated_segments.append(segment)
-
-    @property
-    def total_segments(self) -> int:
-        """Total number of segments to translate."""
-        return len(self.segments)
-
-    @property
-    def completed_segments(self) -> int:
-        """Number of completed translations."""
-        return len(self.translated_segments)
-
-    @property
-    def progress_percentage(self) -> float:
-        """Progress as a percentage."""
-        if self.total_segments == 0:
-            return 0.0
-        return (self.completed_segments / self.total_segments) * 100.0
 
 
 @dataclass
@@ -435,23 +351,3 @@ class TimedTranslation:
         return self.alignment_evaluation.overall_score
 
 
-@dataclass
-class AudioGenerationJob:
-    """Job for generating audio from translated segments."""
-
-    segments: List[TranslationSegment]
-    output_directory: Path
-    language: str
-    tts_engine: TTSEngine
-    audio_format: str = "wav"
-    created_at: datetime = field(default_factory=datetime.now)
-    generated_files: List[Path] = field(default_factory=list)
-
-    def add_generated_file(self, file_path: Path) -> None:
-        """Add a generated audio file."""
-        self.generated_files.append(file_path)
-
-    @property
-    def is_complete(self) -> bool:
-        """Check if all segments have been processed."""
-        return len(self.generated_files) >= len(self.segments)
