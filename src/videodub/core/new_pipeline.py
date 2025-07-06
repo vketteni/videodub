@@ -28,12 +28,12 @@ from .interfaces import (
 from .models import (
     AlignmentConfig,
     AlignmentStrategy,
-    AudioGenerationJob,
     PipelineConfig,
     ProcessingResult,
     ProcessingStatus,
     TimedTranslation,
     TimedTranscript,
+    TranslationSegment,
     TTSEngine,
 )
 
@@ -483,17 +483,13 @@ class NewTranslationPipeline:
                 )
                 translation_segments.append(translation_segment)
 
-            job = AudioGenerationJob(
+            # Generate audio files
+            audio_files = []
+            async for audio_path in self.tts_service.generate_batch_audio(
                 segments=translation_segments,
                 output_directory=audio_dir,
                 language=language,
-                tts_engine=self.config.tts_engine,
-                audio_format=self.config.audio_format,
-            )
-
-            # Generate audio files
-            audio_files = []
-            async for audio_path in self.tts_service.generate_batch_audio(job):
+            ):
                 audio_files.append(audio_path)
 
                 # Update segment with audio path

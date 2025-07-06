@@ -12,7 +12,7 @@ from ..adapters.openai_adapter import OpenAITTSAdapter
 from ..config.validation import validate_audio_format, validate_text_length
 from ..core.exceptions import APIError, TTSError
 from ..core.interfaces import TTSService
-from ..core.models import AudioGenerationJob, TTSEngine
+from ..core.models import TTSEngine, TranslationSegment
 
 logger = structlog.get_logger(__name__)
 
@@ -113,13 +113,20 @@ class OpenAITTSService(TTSService):
             raise TTSError(f"Unexpected error during TTS: {str(e)}")
 
     async def generate_batch_audio(
-        self, job: AudioGenerationJob
+        self, 
+        segments: List[TranslationSegment],
+        output_directory: Path,
+        language: str,
+        voice: Optional[str] = None
     ) -> AsyncIterator[Path]:
         """
         Generate audio for multiple segments.
 
         Args:
-            job: Audio generation job
+            segments: Translation segments to generate audio for
+            output_directory: Directory to save audio files
+            language: Language code for TTS
+            voice: Optional voice identifier
 
         Yields:
             Paths to generated audio files
@@ -127,17 +134,17 @@ class OpenAITTSService(TTSService):
         Raises:
             TTSError: If audio generation fails
         """
-        if not job.segments:
+        if not segments:
             return
 
         logger.info(
             "Starting batch audio generation",
-            segment_count=len(job.segments),
-            language=job.language,
-            tts_engine=job.tts_engine.value,
+            segment_count=len(segments),
+            language=language,
+            voice=voice,
         )
 
-        job.output_directory.mkdir(parents=True, exist_ok=True)
+        output_directory.mkdir(parents=True, exist_ok=True)
 
         # Process segments with concurrency control
         semaphore = asyncio.Semaphore(5)  # Limit concurrent requests
@@ -145,16 +152,16 @@ class OpenAITTSService(TTSService):
         async def generate_segment_audio(index: int, segment) -> Path:
             async with semaphore:
                 try:
-                    filename = f"segment_{index:04d}.{job.audio_format}"
-                    output_path = job.output_directory / filename
+                    filename = f"segment_{index:04d}.wav"
+                    output_path = output_directory / filename
 
                     await self.generate_audio(
                         text=segment.translated_text,
-                        language=job.language,
+                        language=language,
                         output_path=output_path,
+                        voice=voice,
                     )
 
-                    job.add_generated_file(output_path)
                     return output_path
 
                 except Exception as e:
@@ -164,16 +171,13 @@ class OpenAITTSService(TTSService):
                         error=str(e),
                     )
                     # Create empty file as placeholder
-                    output_path = (
-                        job.output_directory
-                        / f"segment_{index:04d}_failed.{job.audio_format}"
-                    )
+                    output_path = output_directory / f"segment_{index:04d}_failed.wav"
                     output_path.touch()
                     return output_path
 
         # Execute generation tasks
         tasks = [
-            generate_segment_audio(i, segment) for i, segment in enumerate(job.segments)
+            generate_segment_audio(i, segment) for i, segment in enumerate(segments)
         ]
 
         # Yield results as they complete
@@ -183,9 +187,7 @@ class OpenAITTSService(TTSService):
 
         logger.info(
             "Batch audio generation completed",
-            total_segments=len(job.segments),
-            generated_files=len(job.generated_files),
-            success_rate=len(job.generated_files) / len(job.segments) * 100,
+            total_segments=len(segments),
         )
 
     def get_supported_languages(self) -> List[str]:
@@ -300,35 +302,44 @@ class SystemTTSService(TTSService):
                 aiff_path.rename(output_path)
 
     async def generate_batch_audio(
-        self, job: AudioGenerationJob
+        self, 
+        segments: List[TranslationSegment],
+        output_directory: Path,
+        language: str,
+        voice: Optional[str] = None
     ) -> AsyncIterator[Path]:
         """
         Generate audio for multiple segments using system TTS.
 
         Args:
-            job: Audio generation job
+            segments: Translation segments to generate audio for
+            output_directory: Directory to save audio files
+            language: Language code for TTS
+            voice: Optional voice identifier (ignored for system TTS)
 
         Yields:
             Paths to generated audio files
         """
         logger.info(
             "Starting system TTS batch generation",
-            segment_count=len(job.segments),
+            segment_count=len(segments),
             command=self._tts_command,
         )
 
-        for i, segment in enumerate(job.segments):
+        output_directory.mkdir(parents=True, exist_ok=True)
+
+        for i, segment in enumerate(segments):
             try:
-                filename = f"segment_{i:04d}.{job.audio_format}"
-                output_path = job.output_directory / filename
+                filename = f"segment_{i:04d}.wav"
+                output_path = output_directory / filename
 
                 await self.generate_audio(
                     text=segment.translated_text,
-                    language=job.language,
+                    language=language,
                     output_path=output_path,
+                    voice=voice,
                 )
 
-                job.add_generated_file(output_path)
                 yield output_path
 
             except Exception as e:
@@ -338,9 +349,7 @@ class SystemTTSService(TTSService):
                     error=str(e),
                 )
                 # Create placeholder file
-                output_path = (
-                    job.output_directory / f"segment_{i:04d}_failed.{job.audio_format}"
-                )
+                output_path = output_directory / f"segment_{i:04d}_failed.wav"
                 output_path.touch()
                 yield output_path
 
