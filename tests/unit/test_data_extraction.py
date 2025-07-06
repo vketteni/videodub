@@ -6,11 +6,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from src.videodub.core.exceptions import DataExtractionError
-from src.videodub.core.models import (
-    SourceType,
-    TimedTranscript,
-    TranscriptSegment,
-)
+from src.videodub.core.models import SourceType, TimedTranscript, TranscriptSegment
 from src.videodub.services.data_extraction import YouTubeDataExtractionService
 
 

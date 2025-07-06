@@ -209,7 +209,6 @@ class OpenAITranslationService(TranslationService):
         return translated_texts
 
 
-
 class FallbackTranslationService(TranslationService):
     """Fallback translation service that adds language prefixes."""
 
@@ -274,4 +273,3 @@ class FallbackTranslationService(TranslationService):
             translated_texts.append(translated_text)
 
         return translated_texts
-
