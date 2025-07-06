@@ -5,9 +5,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.videodub.core.exceptions import DataExtractionError
-from src.videodub.core.models import SourceType, TimedTranscript, TranscriptSegment
-from src.videodub.services.data_extraction import YouTubeDataExtractionService
+from videodub.core.exceptions import DataExtractionError
+from videodub.core.models import SourceType, TimedTranscript, TranscriptSegment
+from videodub.services.data_extraction import YouTubeDataExtractionService
 
 
 class TestYouTubeDataExtractionService:
@@ -70,7 +70,7 @@ class TestYouTubeDataExtractionService:
         service._scrape_video_sync = Mock(return_value=mock_scraper_result)
 
         # Mock validation
-        with patch("src.videodub.services.data_extraction.validate_video_url"):
+        with patch("videodub.services.data_extraction.validate_video_url"):
             result = await service.extract_from_url(test_url)
 
         # Verify result
@@ -94,7 +94,7 @@ class TestYouTubeDataExtractionService:
 
         service._scrape_video_sync = Mock(return_value=mock_result)
 
-        with patch("src.videodub.services.data_extraction.validate_video_url"):
+        with patch("videodub.services.data_extraction.validate_video_url"):
             with pytest.raises(DataExtractionError) as exc_info:
                 await service.extract_from_url(test_url)
 
