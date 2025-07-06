@@ -41,6 +41,16 @@ class SourceType(Enum):
     LOCAL_FILE = "local_file"
 
 
+class AlignmentStrategy(Enum):
+    """Alignment strategies for timing synchronization."""
+
+    LENGTH_BASED = "length_based"
+    SENTENCE_BOUNDARY = "sentence_boundary"
+    SEMANTIC_SIMILARITY = "semantic_similarity"
+    HYBRID = "hybrid"
+    DYNAMIC_PROGRAMMING = "dynamic_programming"
+
+
 @dataclass
 class VideoMetadata:
     """Metadata for a video."""
@@ -277,6 +287,152 @@ class TranslationJob:
         if self.total_segments == 0:
             return 0.0
         return (self.completed_segments / self.total_segments) * 100.0
+
+
+@dataclass
+class AlignmentConfig:
+    """Configuration for alignment strategy and parameters."""
+
+    strategy: AlignmentStrategy
+    parameters: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Validate alignment configuration."""
+        # Set default parameters based on strategy
+        if self.strategy == AlignmentStrategy.LENGTH_BASED:
+            self.parameters.setdefault("length_weight", 0.8)
+            self.parameters.setdefault("position_weight", 0.2)
+        elif self.strategy == AlignmentStrategy.SENTENCE_BOUNDARY:
+            self.parameters.setdefault("sentence_boundary_weight", 0.7)
+            self.parameters.setdefault("length_weight", 0.3)
+        elif self.strategy == AlignmentStrategy.SEMANTIC_SIMILARITY:
+            self.parameters.setdefault("similarity_threshold", 0.6)
+            self.parameters.setdefault(
+                "model_name", "sentence-transformers/all-MiniLM-L6-v2"
+            )
+        elif self.strategy == AlignmentStrategy.HYBRID:
+            self.parameters.setdefault("length_weight", 0.4)
+            self.parameters.setdefault("boundary_weight", 0.3)
+            self.parameters.setdefault("semantic_weight", 0.3)
+        elif self.strategy == AlignmentStrategy.DYNAMIC_PROGRAMMING:
+            self.parameters.setdefault("gap_penalty", 0.1)
+            self.parameters.setdefault("mismatch_penalty", 0.2)
+
+
+@dataclass
+class AlignmentEvaluation:
+    """Evaluation metrics for alignment quality assessment."""
+
+    strategy: AlignmentStrategy
+    timing_accuracy: float  # 0.0-1.0 how well timing is preserved
+    text_preservation: float  # 0.0-1.0 how well text content is preserved
+    boundary_alignment: float  # 0.0-1.0 sentence boundary alignment quality
+    overall_score: float  # 0.0-1.0 weighted combination of metrics
+    execution_time: float  # seconds taken for alignment
+    segment_count: int
+    average_confidence: float  # 0.0-1.0 average per-segment confidence
+
+    def __post_init__(self) -> None:
+        """Validate evaluation metrics."""
+        metrics = [
+            self.timing_accuracy,
+            self.text_preservation,
+            self.boundary_alignment,
+            self.overall_score,
+            self.average_confidence,
+        ]
+        for metric in metrics:
+            if not 0.0 <= metric <= 1.0:
+                raise ValueError(
+                    f"Evaluation metric must be between 0.0 and 1.0, got {metric}"
+                )
+
+        if self.execution_time < 0:
+            raise ValueError("Execution time cannot be negative")
+        if self.segment_count < 0:
+            raise ValueError("Segment count cannot be negative")
+
+
+@dataclass
+class TimedTranslationSegment:
+    """A translated segment with preserved timing information."""
+
+    start_time: float
+    end_time: float
+    original_text: str
+    translated_text: str
+    alignment_confidence: float  # 0.0-1.0 confidence score
+    timing_adjustment: float = 0.0  # Timing adjustment applied (seconds)
+    boundary_type: Optional[
+        str
+    ] = None  # "sentence_start", "sentence_end", "mid_sentence"
+
+    def __post_init__(self) -> None:
+        """Validate timed translation segment."""
+        if self.start_time < 0:
+            raise ValueError("Start time cannot be negative")
+        if self.end_time <= self.start_time:
+            raise ValueError("End time must be greater than start time")
+        if not self.original_text.strip():
+            raise ValueError("Original text cannot be empty")
+        if not self.translated_text.strip():
+            raise ValueError("Translated text cannot be empty")
+        if not 0.0 <= self.alignment_confidence <= 1.0:
+            raise ValueError("Alignment confidence must be between 0.0 and 1.0")
+
+    @property
+    def duration(self) -> float:
+        """Get segment duration in seconds."""
+        return self.end_time - self.start_time
+
+
+@dataclass
+class TimedTranslation:
+    """Translation with timing information preserved from original transcript."""
+
+    segments: List[TimedTranslationSegment]
+    original_transcript: TimedTranscript
+    target_language: str
+    alignment_config: AlignmentConfig
+    alignment_evaluation: AlignmentEvaluation
+    timing_metadata: TimingMetadata
+    created_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self) -> None:
+        """Validate timed translation."""
+        if not self.segments:
+            raise ValueError("Timed translation must have at least one segment")
+
+        # Validate timing consistency
+        if self.segments:
+            total_duration = max(s.end_time for s in self.segments)
+            original_duration = self.timing_metadata.total_duration
+            if abs(total_duration - original_duration) > 2.0:  # 2 second tolerance
+                raise ValueError(
+                    f"Timing duration mismatch: {total_duration} vs {original_duration}"
+                )
+
+    @property
+    def total_duration(self) -> float:
+        """Get total duration of translation."""
+        return max(s.end_time for s in self.segments) if self.segments else 0.0
+
+    @property
+    def average_confidence(self) -> float:
+        """Get average alignment confidence across all segments."""
+        if not self.segments:
+            return 0.0
+        return sum(s.alignment_confidence for s in self.segments) / len(self.segments)
+
+    @property
+    def alignment_strategy(self) -> AlignmentStrategy:
+        """Get the alignment strategy used."""
+        return self.alignment_config.strategy
+
+    @property
+    def overall_quality(self) -> float:
+        """Get overall alignment quality score."""
+        return self.alignment_evaluation.overall_score
 
 
 @dataclass

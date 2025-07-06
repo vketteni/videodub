@@ -40,6 +40,12 @@ class DataExtractionError(PipelineError):
     pass
 
 
+class AlignmentError(PipelineError):
+    """Error during timing alignment."""
+
+    pass
+
+
 class TTSError(PipelineError):
     """Error during text-to-speech generation."""
 

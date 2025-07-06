@@ -5,12 +5,16 @@ from pathlib import Path
 from typing import AsyncIterator, Dict, List, Optional, Tuple
 
 from .models import (
+    AlignmentConfig,
+    AlignmentEvaluation,
+    AlignmentStrategy,
     AudioGenerationJob,
     ProcessedSegment,
     ProcessingMode,
     ProcessingResult,
     SourceType,
     TimedTranscript,
+    TimedTranslation,
     TranscriptSegment,
     TranslationJob,
     TranslationSegment,
@@ -162,6 +166,85 @@ class TranslationService(ABC):
         pass
 
 
+class AlignmentService(ABC):
+    """Abstract interface for timing alignment services."""
+
+    @abstractmethod
+    async def align_translation(
+        self,
+        timed_transcript: TimedTranscript,
+        translated_texts: List[str],
+        target_language: str,
+        config: AlignmentConfig,
+    ) -> TimedTranslation:
+        """
+        Align translated texts with original timing information.
+
+        Args:
+            timed_transcript: Original transcript with timing
+            translated_texts: List of translated text strings
+            target_language: Target language code
+            config: Alignment configuration and strategy
+
+        Returns:
+            TimedTranslation with synchronized timing
+
+        Raises:
+            AlignmentError: If alignment fails
+        """
+        pass
+
+    @abstractmethod
+    async def evaluate_alignment(
+        self,
+        timed_translation: TimedTranslation,
+        reference_alignment: Optional[TimedTranslation] = None,
+    ) -> AlignmentEvaluation:
+        """
+        Evaluate alignment quality and generate metrics.
+
+        Args:
+            timed_translation: Alignment result to evaluate
+            reference_alignment: Optional reference for comparison
+
+        Returns:
+            AlignmentEvaluation with quality metrics
+
+        Raises:
+            AlignmentError: If evaluation fails
+        """
+        pass
+
+    @abstractmethod
+    async def compare_alignments(
+        self,
+        alignments: List[TimedTranslation],
+    ) -> List[AlignmentEvaluation]:
+        """
+        Compare multiple alignment results for A/B testing.
+
+        Args:
+            alignments: List of alignment results to compare
+
+        Returns:
+            List of evaluation metrics for each alignment
+
+        Raises:
+            AlignmentError: If comparison fails
+        """
+        pass
+
+    @abstractmethod
+    def get_supported_strategies(self) -> List[AlignmentStrategy]:
+        """
+        Get list of supported alignment strategies.
+
+        Returns:
+            List of supported alignment strategies
+        """
+        pass
+
+
 class TTSService(ABC):
     """Abstract interface for text-to-speech services."""
 
@@ -262,6 +345,38 @@ class StorageService(ABC):
         pass
 
     @abstractmethod
+    async def save_timed_transcript(
+        self, video_id: str, timed_transcript: TimedTranscript
+    ) -> Path:
+        """
+        Save timed transcript to storage.
+
+        Args:
+            video_id: Video identifier
+            timed_transcript: Timed transcript to save
+
+        Returns:
+            Path where timed transcript was saved
+        """
+        pass
+
+    @abstractmethod
+    async def save_timed_translation(
+        self, video_id: str, timed_translation: TimedTranslation
+    ) -> Path:
+        """
+        Save timed translation to storage.
+
+        Args:
+            video_id: Video identifier
+            timed_translation: Timed translation to save
+
+        Returns:
+            Path where timed translation was saved
+        """
+        pass
+
+    @abstractmethod
     async def save_processing_result(self, result: ProcessingResult) -> Path:
         """
         Save processing result to storage.
@@ -299,6 +414,36 @@ class StorageService(ABC):
 
         Returns:
             Translation segments if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    async def load_timed_transcript(
+        self, video_id: str
+    ) -> Optional[TimedTranscript]:
+        """
+        Load timed transcript from storage.
+
+        Args:
+            video_id: Video identifier
+
+        Returns:
+            Timed transcript if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    async def load_timed_translation(
+        self, video_id: str
+    ) -> Optional[TimedTranslation]:
+        """
+        Load timed translation from storage.
+
+        Args:
+            video_id: Video identifier
+
+        Returns:
+            Timed translation if found, None otherwise
         """
         pass
 
