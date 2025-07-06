@@ -46,7 +46,7 @@
           {
             "adr": "0003",
             "title": "Transcript Processing Service Redesign", 
-            "status": "Accepted",
+            "status": "Superseded by ADR-0005",
             "relevance": "Step 2 implementation approach"
           },
           {
@@ -54,6 +54,12 @@
             "title": "Pipeline Step Evaluation Framework",
             "status": "Proposed",
             "relevance": "Quality evaluation and human assessment system"
+          },
+          {
+            "adr": "0005",
+            "title": "Pipeline Step Separation and Responsibility Alignment",
+            "status": "In Progress - Phase 1 Complete",
+            "relevance": "Fundamental pipeline architecture redesign"
           }
         ]
       },
@@ -74,27 +80,120 @@
         ]
       }
     },
+    "current_refactoring": {
+      "status": "In Progress - ADR 0005 Implementation",
+      "description": "Implementing pipeline step separation and responsibility alignment",
+      "completed_phases": [
+        {
+          "phase": 1,
+          "name": "Data Extraction Service Implementation",
+          "status": "Complete",
+          "deliverables": [
+            "DataExtractionService interface (src/videodub/core/interfaces.py)",
+            "YouTubeDataExtractionService implementation (src/videodub/services/data_extraction.py)",
+            "TimedTranscript, TimingMetadata, SourceType models (src/videodub/core/models.py)",
+            "DataExtractionError exception (src/videodub/core/exceptions.py)",
+            "Comprehensive test suite (tests/unit/test_data_extraction.py)"
+          ]
+        }
+      ],
+      "remaining_phases": [
+        {
+          "phase": 2,
+          "name": "Translation Service Refactoring",
+          "description": "Refactor TranslationService to pure text translation",
+          "status": "Pending"
+        },
+        {
+          "phase": 3,
+          "name": "Alignment Service Creation",
+          "description": "Create AlignmentService for timing synchronization",
+          "status": "Pending"
+        },
+        {
+          "phase": 4,
+          "name": "Integration Testing",
+          "description": "Integration testing and performance optimization",
+          "status": "Pending"
+        },
+        {
+          "phase": 5,
+          "name": "Migration",
+          "description": "Migration of existing workflows",
+          "status": "Pending"
+        }
+      ],
+      "key_design_changes": {
+        "old_pipeline": "video → transcription → translation → tts → audio → video",
+        "new_pipeline": "video → data_extraction → translation → alignment → tts → audio → video",
+        "rationale": "Clean separation between data extraction, translation, and timing alignment"
+      }
+    },
     "flow": [
       {
         "step": 1,
-        "name": "Video Scraping",
+        "name": "Data Extraction",
+        "component": "DataExtractionService",
+        "file_path": "src/videodub/services/data_extraction.py",
+        "implementation": "YouTubeDataExtractionService",
+        "input": ["Video URL"],
+        "output": ["TimedTranscript"],
+        "description": "Extracts transcript and timing metadata from video sources (YouTube API, future: speech-to-text)",
+        "status": "Implemented - Phase 1 Complete",
+        "models": ["TimedTranscript", "TimingMetadata", "SourceType"],
+        "features": ["Quality scoring", "Timing accuracy analysis", "Source type detection"]
+      },
+      {
+        "step": 1.5,
+        "name": "Video Scraping (Legacy)",
         "component": "VideoScrapingService",
         "file_path": "src/videodub/services/scraper.py",
         "implementation": "YouTubeScrapingService",
         "input": ["Video URL"],
         "output": ["VideoMetadata", "TranscriptSegments"],
         "description": "Downloads video, extracts metadata and transcript using video_scraper package",
+        "status": "Legacy - Being replaced by DataExtractionService",
         "common_errors": ["Video not found", "No transcript available", "video_scraper package missing"]
       },
       {
         "step": 2,
-        "name": "Transcript Processing",
+        "name": "Translation",
+        "component": "TranslationService",
+        "file_path": "src/videodub/services/translator.py",
+        "implementation": "OpenAITranslationService",
+        "input": ["ProcessedText", "TargetLanguage"],
+        "output": ["TranslatedText"],
+        "description": "Pure text-to-text translation using OpenAI GPT models",
+        "status": "Needs Refactoring - Phase 2 Pending",
+        "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"],
+        "planned_changes": ["Remove timing logic", "Focus on pure translation", "Accept processed text input"]
+      },
+      {
+        "step": 3,
+        "name": "Alignment",
+        "component": "AlignmentService",
+        "file_path": "src/videodub/services/alignment.py",
+        "implementation": "TimingAlignmentService",
+        "input": ["TimedTranscript", "TranslatedText"],
+        "output": ["TimedTranslation"],
+        "description": "Synchronizes translated text with original speech timing metadata",
+        "status": "Not Implemented - Phase 3 Pending",
+        "features": [
+          "Timing preservation logic",
+          "Segment length adjustments",
+          "Quality scoring for alignment accuracy"
+        ]
+      },
+      {
+        "step": 3.5,
+        "name": "Transcript Processing (Legacy)",
         "component": "TranscriptProcessingService",
         "file_path": "src/videodub/services/transcript.py",
         "implementation": "HybridTranscriptProcessingService",
         "input": ["TranscriptSegments"],
         "output": ["ProcessedSegments"],
         "description": "Hybrid processing with rule-based preprocessing and optional AI enhancement for optimal translation quality",
+        "status": "Legacy - Logic being redistributed to Alignment step",
         "processing_modes": ["RULE_BASED", "AI_ENHANCED", "HYBRID"],
         "features": [
           "Sequence tracking for deterministic ordering",
@@ -105,25 +204,14 @@
         ]
       },
       {
-        "step": 3,
-        "name": "Translation",
-        "component": "TranslationService",
-        "file_path": "src/videodub/services/translator.py",
-        "implementation": "OpenAITranslationService",
-        "input": ["ProcessedTranscriptSegments", "TargetLanguage"],
-        "output": ["TranslationSegments"],
-        "description": "Translates transcript segments using OpenAI GPT models with sentence-level processing",
-        "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"]
-      },
-      {
         "step": 4,
         "name": "Text-to-Speech",
         "component": "TTSService",
         "file_path": "src/videodub/services/tts.py",
         "implementation": "OpenAITTSService",
-        "input": ["TranslationSegments", "TargetLanguage"],
+        "input": ["TimedTranslation", "TargetLanguage"],
         "output": ["AudioFiles"],
-        "description": "Generates natural-sounding audio from translated text using OpenAI TTS or other engines",
+        "description": "Generates natural-sounding audio from aligned translated segments using OpenAI TTS or other engines",
         "engines_supported": ["OpenAI", "Google", "Azure", "System"]
       },
       {
@@ -132,7 +220,7 @@
         "component": "AudioProcessingService",
         "file_path": "src/videodub/services/audio.py",
         "implementation": "FFmpegAudioProcessingService",
-        "input": ["AudioFiles", "TranslationSegments"],
+        "input": ["AudioFiles", "TimedTranslation"],
         "output": ["CombinedAudioFile"],
         "description": "Combines individual audio segments into a single synchronized audio track"
       },
@@ -153,7 +241,7 @@
         "component": "StorageService",
         "file_path": "src/videodub/services/storage.py",
         "implementation": "StorageService",
-        "input": ["VideoMetadata", "TranslationSegments", "AudioFiles", "DubbedVideo"],
+        "input": ["VideoMetadata", "TimedTranslation", "AudioFiles", "DubbedVideo"],
         "output": ["ProcessingResult"],
         "description": "Saves all pipeline outputs and generates processing result with file paths"
       }
