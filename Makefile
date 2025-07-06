@@ -32,6 +32,15 @@ test-fast:
 test-integration:
 	poetry run pytest tests/integration/ -v
 
+test-performance:
+	poetry run pytest tests/integration/ -m performance -v
+
+test-performance-fast:
+	poetry run pytest tests/integration/ -m "performance and fast" -v
+
+test-performance-slow:
+	poetry run pytest tests/integration/ -m "performance and slow" -v
+
 # Code quality
 lint:
 	poetry run ruff check src/ tests/
