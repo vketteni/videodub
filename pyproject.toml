@@ -33,6 +33,7 @@ mypy = "^1.0.0"
 ruff = "^0.1.0"
 factory-boy = "^3.2.0"
 respx = "^0.20.0"
+psutil = "^7.0.0"
 
 [tool.poetry.scripts]
 videodub = "videodub.cli:main"
@@ -78,6 +79,9 @@ addopts = "--strict-markers --disable-warnings"
 markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "performance: marks tests as performance tests",
+    "slow: marks tests as slow running tests (>10s)",
+    "fast: marks tests as fast running tests (<5s)",
 ]
 
 [tool.coverage.run]
