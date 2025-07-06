@@ -83,106 +83,26 @@
           "Automated report generation",
           "Real service integration"
         ]
+      },
+      "testing_strategy": {
+        "location": "docs/testing_strategy.md",
+        "description": "Environment-adaptive testing strategy with CI/Local configurations",
+        "status": "Complete",
+        "key_features": [
+          "Environment-adaptive testing (CI vs Local)",
+          "Performance testing with realistic timing expectations",
+          "Fast/slow test categorization for optimal CI usage"
+        ],
+        "commands": {
+          "fast_tests": "make test-fast",
+          "performance_fast": "make test-performance-fast",
+          "all_tests": "make test"
+        }
       }
     },
     "current_refactoring": {
       "status": "In Progress - ADR 0005 Implementation",
       "description": "Implementing pipeline step separation and responsibility alignment",
-      "completed_phases": [
-        {
-          "phase": 1,
-          "name": "Data Extraction Service Implementation",
-          "status": "Complete",
-          "deliverables": [
-            "DataExtractionService interface (src/videodub/core/interfaces.py)",
-            "YouTubeDataExtractionService implementation (src/videodub/services/data_extraction.py)",
-            "TimedTranscript, TimingMetadata, SourceType models (src/videodub/core/models.py)",
-            "DataExtractionError exception (src/videodub/core/exceptions.py)",
-            "Comprehensive test suite (tests/unit/test_data_extraction.py)"
-          ]
-        },
-        {
-          "phase": 2,
-          "name": "Translation Service Refactoring",
-          "status": "Complete",
-          "deliverables": [
-            "Refactored TranslationService interface to pure text-to-text (src/videodub/core/interfaces.py)",
-            "Updated OpenAITranslationService implementation (src/videodub/services/translator.py)",
-            "Updated FallbackTranslationService implementation (src/videodub/services/translator.py)",
-            "Removed all timing logic and segment-based methods",
-            "Comprehensive test suite (tests/unit/test_translation_service.py)",
-            "18 tests covering all functionality, edge cases, and interface compliance"
-          ],
-          "key_changes": [
-            "translate_text(text: str, target_language: str) -> str",
-            "translate_batch(texts: list[str], target_language: str) -> list[str]",
-            "Removed translate_segments() and segment-based translate_batch()",
-            "Clean separation: List[str] → TranslationService → List[str]"
-          ]
-        },
-        {
-          "phase": 3,
-          "name": "Alignment Service Implementation",
-          "status": "Complete",
-          "deliverables": [
-            "AlignmentService interface with A/B testing support (src/videodub/core/interfaces.py)",
-            "TimingAlignmentService implementation (src/videodub/services/alignment.py)",
-            "TimedTranslation, TimedTranslationSegment, AlignmentConfig, AlignmentEvaluation models (src/videodub/core/models.py)",
-            "AlignmentStrategy enum with 5 strategies (LENGTH_BASED, SENTENCE_BOUNDARY, SEMANTIC_SIMILARITY, HYBRID, DYNAMIC_PROGRAMMING)",
-            "AlignmentError exception (src/videodub/core/exceptions.py)",
-            "NewTranslationPipeline with full integration (src/videodub/core/new_pipeline.py)",
-            "Enhanced StorageService interface for new models (src/videodub/core/interfaces.py)",
-            "Comprehensive test suite (tests/unit/test_alignment_service.py, tests/unit/test_new_pipeline.py)",
-            "16 alignment tests + 8 pipeline integration tests covering all strategies and A/B testing"
-          ],
-          "key_changes": [
-            "align_translation(TimedTranscript, List[str], target_language, AlignmentConfig) -> TimedTranslation",
-            "evaluate_alignment() and compare_alignments() for A/B testing",
-            "Multiple alignment strategies with configurable parameters",
-            "Quality metrics: timing_accuracy, text_preservation, boundary_alignment, overall_score",
-            "Integration with existing evaluation framework",
-            "Clean data flow: TimedTranscript + List[str] → TimedTranslation"
-          ],
-          "a_b_testing_features": [
-            "Multiple alignment strategy comparison in single run",
-            "Automated quality scoring and ranking",
-            "Execution time and confidence tracking",
-            "Comprehensive evaluation metrics",
-            "Integration with evaluation framework"
-          ]
-        },
-        {
-          "phase": 4,
-          "name": "Integration Testing and Performance Optimization",
-          "status": "Complete",
-          "deliverables": [
-            "Comprehensive integration test suite (tests/integration/)",
-            "End-to-end pipeline integration tests (9 tests)",
-            "Service integration tests (8 tests)",
-            "Performance integration tests (10 tests)",
-            "Performance optimization implementations (src/videodub/services/optimized_translator.py)",
-            "Performance analysis documentation (docs/performance_analysis_phase4.md)",
-            "Bottleneck identification and optimization strategies",
-            "Concurrent processing optimizations"
-          ],
-          "performance_improvements": [
-            "Translation batch optimization: 90% performance improvement",
-            "Concurrent TTS generation: 2.4x speedup",
-            "Pipeline throughput: 5.8 segments/second baseline",
-            "Memory efficiency validation for large datasets",
-            "Error handling performance under 1s",
-            "Concurrent processing 3x faster than sequential"
-          ],
-          "test_coverage": [
-            "Complete pipeline flow validation",
-            "Service integration and data flow",
-            "Error handling and recovery",
-            "Performance benchmarking",
-            "Memory usage optimization",
-            "Concurrent processing validation"
-          ]
-        }
-      ],
       "completed_phases": [
         {
           "phase": 1,
