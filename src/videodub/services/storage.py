@@ -377,3 +377,222 @@ class FileStorageService(StorageService):
         except Exception as e:
             logger.error("Failed to calculate storage stats", error=str(e))
             raise StorageError(f"Failed to calculate storage stats: {str(e)}")
+
+    async def save_timed_transcript(self, video_id: str, timed_transcript) -> Path:
+        """Save timed transcript to storage."""
+        try:
+            video_dir = await self.get_video_directory(video_id)
+            transcript_path = video_dir / "timed_transcript.json"
+            
+            # Convert to dict for JSON serialization
+            transcript_dict = {
+                "video_id": timed_transcript.video_metadata.video_id,
+                "language": timed_transcript.language,
+                "source_type": timed_transcript.source_type.value,
+                "timing_metadata": {
+                    "total_duration": timed_transcript.timing_metadata.total_duration,
+                    "segment_count": timed_transcript.timing_metadata.segment_count,
+                    "average_segment_duration": timed_transcript.timing_metadata.average_segment_duration,
+                    "timing_accuracy": timed_transcript.timing_metadata.timing_accuracy,
+                    "has_precise_timing": timed_transcript.timing_metadata.has_precise_timing,
+                    "extraction_method": timed_transcript.timing_metadata.extraction_method
+                },
+                "video_metadata": {
+                    "video_id": timed_transcript.video_metadata.video_id,
+                    "title": timed_transcript.video_metadata.title,
+                    "duration": timed_transcript.video_metadata.duration,
+                    "url": timed_transcript.video_metadata.url,
+                    "channel": timed_transcript.video_metadata.channel,
+                    "upload_date": timed_transcript.video_metadata.upload_date,
+                    "view_count": timed_transcript.video_metadata.view_count,
+                    "description": timed_transcript.video_metadata.description
+                },
+                "extraction_quality": timed_transcript.extraction_quality,
+                "segments": [
+                    {
+                        "start_time": seg.start_time,
+                        "end_time": seg.end_time,
+                        "text": seg.text
+                    }
+                    for seg in timed_transcript.segments
+                ]
+            }
+            
+            async with aiofiles.open(transcript_path, "w", encoding="utf-8") as f:
+                await f.write(json.dumps(transcript_dict, indent=2, ensure_ascii=False))
+            
+            logger.debug("Timed transcript saved", video_id=video_id, path=str(transcript_path))
+            return transcript_path
+            
+        except Exception as e:
+            logger.error("Failed to save timed transcript", video_id=video_id, error=str(e))
+            raise StorageError(f"Failed to save timed transcript: {str(e)}")
+
+    async def save_timed_translation(self, video_id: str, timed_translation) -> Path:
+        """Save timed translation to storage."""
+        try:
+            video_dir = await self.get_video_directory(video_id)
+            translation_path = video_dir / "timed_translation.json"
+            
+            # Convert to dict for JSON serialization
+            translation_dict = {
+                "video_id": timed_translation.original_transcript.video_metadata.video_id,
+                "target_language": timed_translation.target_language,
+                "created_at": timed_translation.created_at.isoformat() if timed_translation.created_at else None,
+                "alignment_config": {
+                    "strategy": timed_translation.alignment_config.strategy.value,
+                    "parameters": timed_translation.alignment_config.parameters
+                },
+                "alignment_evaluation": {
+                    "timing_accuracy": timed_translation.alignment_evaluation.timing_accuracy,
+                    "text_preservation": timed_translation.alignment_evaluation.text_preservation,
+                    "boundary_alignment": timed_translation.alignment_evaluation.boundary_alignment,
+                    "overall_score": timed_translation.alignment_evaluation.overall_score,
+                    "execution_time": timed_translation.alignment_evaluation.execution_time
+                },
+                "timing_metadata": {
+                    "total_duration": timed_translation.timing_metadata.total_duration,
+                    "segment_count": timed_translation.timing_metadata.segment_count,
+                    "average_segment_duration": timed_translation.timing_metadata.average_segment_duration,
+                    "timing_accuracy": timed_translation.timing_metadata.timing_accuracy,
+                    "has_precise_timing": timed_translation.timing_metadata.has_precise_timing,
+                    "extraction_method": timed_translation.timing_metadata.extraction_method
+                },
+                "segments": [
+                    {
+                        "start_time": seg.start_time,
+                        "end_time": seg.end_time,
+                        "original_text": seg.original_text,
+                        "translated_text": seg.translated_text,
+                        "confidence": getattr(seg, 'confidence', None)
+                    }
+                    for seg in timed_translation.segments
+                ]
+            }
+            
+            async with aiofiles.open(translation_path, "w", encoding="utf-8") as f:
+                await f.write(json.dumps(translation_dict, indent=2, ensure_ascii=False))
+            
+            logger.debug("Timed translation saved", video_id=video_id, path=str(translation_path))
+            return translation_path
+            
+        except Exception as e:
+            logger.error("Failed to save timed translation", video_id=video_id, error=str(e))
+            raise StorageError(f"Failed to save timed translation: {str(e)}")
+
+    async def load_timed_transcript(self, video_id: str):
+        """Load timed transcript from storage."""
+        try:
+            video_dir = await self.get_video_directory(video_id)
+            transcript_path = video_dir / "timed_transcript.json"
+            
+            if not transcript_path.exists():
+                logger.debug("Timed transcript not found", video_id=video_id)
+                return None
+            
+            async with aiofiles.open(transcript_path, "r", encoding="utf-8") as f:
+                transcript_data = json.loads(await f.read())
+            
+            # Import here to avoid circular imports
+            from ..core.models import TimedTranscript, TranscriptSegment, VideoMetadata, TimingMetadata, SourceType
+            
+            segments = [
+                TranscriptSegment(
+                    start_time=seg["start_time"],
+                    end_time=seg["end_time"],
+                    text=seg["text"]
+                )
+                for seg in transcript_data["segments"]
+            ]
+            
+            # Reconstruct metadata objects
+            video_metadata = VideoMetadata(**transcript_data["video_metadata"])
+            timing_metadata = TimingMetadata(**transcript_data["timing_metadata"])
+            source_type = SourceType(transcript_data["source_type"])
+            
+            timed_transcript = TimedTranscript(
+                segments=segments,
+                source_type=source_type,
+                timing_metadata=timing_metadata,
+                video_metadata=video_metadata,
+                language=transcript_data["language"],
+                extraction_quality=transcript_data.get("extraction_quality")
+            )
+            
+            logger.debug("Timed transcript loaded", video_id=video_id)
+            return timed_transcript
+            
+        except Exception as e:
+            logger.error("Failed to load timed transcript", video_id=video_id, error=str(e))
+            return None
+
+    async def load_timed_translation(self, video_id: str):
+        """Load timed translation from storage."""
+        try:
+            video_dir = await self.get_video_directory(video_id)
+            translation_path = video_dir / "timed_translation.json"
+            
+            if not translation_path.exists():
+                logger.debug("Timed translation not found", video_id=video_id)
+                return None
+            
+            async with aiofiles.open(translation_path, "r", encoding="utf-8") as f:
+                translation_data = json.loads(await f.read())
+            
+            # Import here to avoid circular imports
+            from ..core.models import (
+                TimedTranslation, 
+                TimedTranslationSegment, 
+                AlignmentConfig, 
+                AlignmentEvaluation, 
+                AlignmentStrategy,
+                TimingMetadata
+            )
+            from datetime import datetime
+            
+            segments = [
+                TimedTranslationSegment(
+                    start_time=seg["start_time"],
+                    end_time=seg["end_time"],
+                    original_text=seg["original_text"],
+                    translated_text=seg["translated_text"],
+                    confidence=seg.get("confidence")
+                )
+                for seg in translation_data["segments"]
+            ]
+            
+            # Load the original transcript from storage
+            original_transcript = await self.load_timed_transcript(video_id)
+            if not original_transcript:
+                logger.warning("Original transcript not found for timed translation", video_id=video_id)
+                return None
+            
+            # Reconstruct objects
+            alignment_config = AlignmentConfig(
+                strategy=AlignmentStrategy(translation_data["alignment_config"]["strategy"]),
+                parameters=translation_data["alignment_config"]["parameters"]
+            )
+            
+            alignment_evaluation = AlignmentEvaluation(**translation_data["alignment_evaluation"])
+            timing_metadata = TimingMetadata(**translation_data["timing_metadata"])
+            
+            created_at = None
+            if translation_data.get("created_at"):
+                created_at = datetime.fromisoformat(translation_data["created_at"])
+            
+            timed_translation = TimedTranslation(
+                segments=segments,
+                original_transcript=original_transcript,
+                target_language=translation_data["target_language"],
+                alignment_config=alignment_config,
+                alignment_evaluation=alignment_evaluation,
+                timing_metadata=timing_metadata,
+                created_at=created_at
+            )
+            
+            logger.debug("Timed translation loaded", video_id=video_id)
+            return timed_translation
+            
+        except Exception as e:
+            logger.error("Failed to load timed translation", video_id=video_id, error=str(e))
+            return None
