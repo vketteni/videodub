@@ -5,8 +5,8 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 ### Core Components
 
 #### 1. **Core Pipeline (`src/videodub/core/`)**
-- **`pipeline.py`** - Main orchestrator with cost tracking integration
-- **`models.py`** - Data models with sentence context support
+- **`pipeline.py`** - Modern pipeline orchestrator with alignment service integration
+- **`models.py`** - Comprehensive data models with timing and alignment support
 - **`interfaces.py`** - Service interfaces and contracts
 - **`exceptions.py`** - Comprehensive error handling
 
@@ -16,33 +16,38 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 - Manages API keys for OpenAI, Google, and Azure services
 - Defines supported languages and TTS engines with pricing
 
-#### 3. **Video Processing (`src/videodub/services/video_scraper.py`)**
-- Downloads videos and extracts audio/metadata
-- Handles transcript extraction when available
-- Manages file organization and storage
-- Integrates with yt-dlp for broad platform support
+#### 3. **Data Extraction (`src/videodub/services/data_extraction.py`)**
+- **`YouTubeDataExtractionService`** - Extracts transcript and timing metadata from YouTube videos
+- Handles quality scoring and timing accuracy analysis
+- Manages source type detection and validation
+- Future support for speech-to-text for raw videos
 
-#### 4. **Advanced Translation System (`src/videodub/services/`)**
-- **`transcript_processor.py`** 
-  - needs reimplementation [current task]
-- **`translator.py`** 
-  - Sentence-level translation for better quality and efficiency
-  - Support for multiple OpenAI models (GPT-3.5, GPT-4, GPT-4.1-nano)
-  - Fallback mechanisms and error handling
+#### 4. **Translation System (`src/videodub/services/translator.py`)**
+- **Pure text-to-text translation** with clean separation of concerns
+- **`OpenAITranslationService`** - Standard implementation for development
+- **`OptimizedOpenAITranslationService`** - 90% performance improvement for production
+- Support for multiple OpenAI models (GPT-3.5, GPT-4, GPT-4.1-nano)
+- Batch processing and error handling with fallbacks
 
-#### 5. **Text-to-Speech Engine (`src/videodub/services/tts.py`)**
+#### 5. **Alignment Service (`src/videodub/services/alignment.py`)**
+- **`TimingAlignmentService`** - Synchronizes translated text with original timing
+- Multiple alignment strategies: LENGTH_BASED, SENTENCE_BOUNDARY, HYBRID
+- A/B testing support for strategy comparison and optimization
+- Quality scoring: timing_accuracy, text_preservation, boundary_alignment
+
+#### 6. **Text-to-Speech Engine (`src/videodub/services/tts.py`)**
 - Multi-engine support (OpenAI, Google, Azure, System TTS)
 - Sentence-based audio generation for natural speech flow
 - Character usage tracking for cost analysis
 - Quality optimization through complete sentence processing
 
-#### 6. **Video Processing Engine (`src/videodub/services/video_processor.py`)**
+#### 7. **Video Processing Engine (`src/videodub/services/video.py`)**
 - **NEW**: FFmpeg-based video dubbing with audio replacement
 - Lossless video quality preservation during audio track replacement
 - Complete video metadata extraction (duration, resolution, codecs)
 - Graceful fallback handling for video processing errors
 
-#### 7. **Cost Tracking & Analytics (`src/videodub/utils/cost_tracking.py`)**
+#### 8. **Cost Tracking & Analytics (`src/videodub/utils/cost_tracking.py`)**
 - **NEW**: Real-time API usage tracking
 - Accurate cost calculation with current pricing models
 - Token and character usage analytics
@@ -67,21 +72,26 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 
 ## Pipeline Architecture
 
-### Main Workflow
+### Pipeline Workflow
 ```mermaid
 flowchart TD
-    A[Video URL] --> B[VideoScrapingService]
-    B --> C[VideoMetadata + TranscriptSegments]
-    C --> D[TranscriptProcessingService]
-    D --> E[TranslationService] 
-    E --> F[TTSService]
-    F --> G[AudioProcessingService]
-    G --> H[VideoProcessingService]
-    H --> I[StorageService]
-    I --> J[ProcessingResult]
+    A[Video URL] --> B[DataExtractionService]
+    B --> C[TimedTranscript]
+    C --> D[TranslationService] 
+    D --> E[List of Translated Texts]
+    C --> F[AlignmentService]
+    E --> F
+    F --> G[TimedTranslation]
+    G --> H[TTSService]
+    H --> I[AudioFiles]
+    I --> J[AudioProcessingService]
+    J --> K[VideoProcessingService]
+    K --> L[StorageService]
+    L --> M[ProcessingResult]
     
     %% Side processes
-    E -.-> K[CostTracker]
+    D -.-> N[CostTracker]
+    F -.-> O[AlignmentEvaluation]
     F -.-> K
     K --> L[Cost Analytics]
     

@@ -46,14 +46,38 @@ python examples/quick_test.py compare
 ### 📚 **Programmatic Usage**
 
 ```python
-from videodub import create_pipeline, TTSEngine
+from pathlib import Path
+from videodub import (
+    TTSEngine, OpenAITranslationService, create_tts_service,
+    create_audio_processing_service, FFmpegVideoProcessingService,
+    FileStorageService
+)
+from videodub.core.pipeline import TranslationPipeline
+from videodub.services.data_extraction import YouTubeDataExtractionService
+from videodub.services.alignment import TimingAlignmentService
+from videodub.core.models import PipelineConfig
 
-# Create pipeline with sentence reconstruction (automatic)
-pipeline = create_pipeline(
-    target_language="de",           # German
-    tts_engine=TTSEngine.OPENAI,   # High-quality TTS
-    translation_model="gpt-4.1-nano",  # Cost-effective model
-    openai_api_key="your_api_key"
+# Create output directory
+output_path = Path("./my_translations")
+output_path.mkdir(parents=True, exist_ok=True)
+
+# Create pipeline with modern architecture
+pipeline = TranslationPipeline(
+    data_extraction_service=YouTubeDataExtractionService(output_dir=output_path),
+    translation_service=OpenAITranslationService(
+        api_key="your_api_key",
+        model="gpt-4.1-nano"  # Cost-effective model
+    ),
+    alignment_service=TimingAlignmentService(),
+    tts_service=create_tts_service(engine=TTSEngine.OPENAI, openai_api_key="your_api_key"),
+    audio_processing_service=create_audio_processing_service(),
+    video_processing_service=FFmpegVideoProcessingService(),
+    storage_service=FileStorageService(base_path=output_path),
+    config=PipelineConfig(
+        target_language="de",  # German
+        tts_engine=TTSEngine.OPENAI,
+        output_directory=str(output_path),
+    )
 )
 
 # Process video with cost tracking
@@ -62,25 +86,27 @@ result = await pipeline.process_video("https://youtube.com/watch?v=VIDEO_ID")
 # Check results and costs
 print(f"Status: {result.status.value}")
 print(f"Total Cost: ${result.cost_summary['totals']['total_cost']:.6f}")
-print(f"Translation Segments: {len(result.translation_segments)}")
+print(f"Translation Strategy: {result.alignment_evaluation.best_strategy if result.alignment_evaluation else 'N/A'}")
 ```
 
-### 🎯 **Advanced Features**
+### 🎯 **Advanced Features - Alignment Strategies**
 
 ```python
-# Comprehensive example with all features
-pipeline = create_pipeline(
-    output_directory="./my_translations",
-    target_language="de",           # German
-    translation_model="gpt-4.1-nano",  # Latest efficient model
-    tts_model="tts-1-hd",          # High-definition audio
-    tts_engine=TTSEngine.OPENAI,
-    openai_api_key=os.getenv("OPENAI_API_KEY")
-)
+# Test multiple alignment strategies (A/B testing)
+result = await pipeline.process_video_with_alignment_comparison("https://youtube.com/watch?v=VIDEO_ID")
 
-# Batch processing with cost optimization
+# Check which alignment strategy worked best
+if result.alignment_evaluation:
+    print(f"Best Strategy: {result.alignment_evaluation.best_strategy}")
+    print(f"Strategies Tested: {len(result.alignment_evaluation.strategy_results)}")
+    
+    for strategy, eval_result in result.alignment_evaluation.strategy_results.items():
+        print(f"  {strategy}: Score {eval_result.overall_score:.3f} (Time: {eval_result.execution_time:.2f}s)")
+
+# Sequential processing for multiple videos
 urls = ["https://youtube.com/watch?v=VIDEO1", "https://youtube.com/watch?v=VIDEO2"]
-async for result in pipeline.process_video_batch(urls, max_concurrent=2):
-    cost = result.cost_summary['totals']['total_cost']
-    print(f"Video {result.video_id}: ${cost:.6f}")
+for i, url in enumerate(urls):
+    result = await pipeline.process_video(url)
+    cost = result.cost_summary['totals']['total_cost'] if result.cost_summary else 0
+    print(f"Video {i+1}: {result.status.value} - ${cost:.6f}")
 ```

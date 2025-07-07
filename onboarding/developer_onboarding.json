@@ -2,8 +2,7 @@
   "architecture_overview": {
     "description": "This project consists of several interconnected modules that work together to create a complete video translation workflow.",
     "project_info": {
-      "main_entry_point": "src/videodub/core/new_pipeline.py",
-      "legacy_entry_point": "src/videodub/core/pipeline.py",
+      "main_entry_point": "src/videodub/core/pipeline.py",
       "cli_command": "python examples/quick_test.py",
       "package_manager": "poetry",
       "python_version": "3.8+"
@@ -21,7 +20,7 @@
       "install_command": "poetry install"
     },
     "key_files": {
-      "main_pipeline": "src/videodub/core/new_pipeline.py",
+      "main_pipeline": "src/videodub/core/pipeline.py",
       "legacy_pipeline": "src/videodub/core/pipeline.py",
       "alignment_service": "src/videodub/services/alignment.py",
       "translation_service": "src/videodub/services/translator.py",
@@ -145,9 +144,9 @@
             "TimedTranslation, TimedTranslationSegment, AlignmentConfig, AlignmentEvaluation models (src/videodub/core/models.py)",
             "AlignmentStrategy enum with 5 strategies (LENGTH_BASED, SENTENCE_BOUNDARY, SEMANTIC_SIMILARITY, HYBRID, DYNAMIC_PROGRAMMING)",
             "AlignmentError exception (src/videodub/core/exceptions.py)",
-            "NewTranslationPipeline with full integration (src/videodub/core/new_pipeline.py)",
+            "TranslationPipeline with full integration (src/videodub/core/pipeline.py)",
             "Enhanced StorageService interface for new models (src/videodub/core/interfaces.py)",
-            "Comprehensive test suite (tests/unit/test_alignment_service.py, tests/unit/test_new_pipeline.py)",
+            "Comprehensive test suite (tests/unit/test_alignment_service.py, tests/unit/test_pipeline.py)",
             "16 alignment tests + 8 pipeline integration tests covering all strategies and A/B testing"
           ],
           "key_changes": [
@@ -205,7 +204,7 @@
             "Removed legacy models: ProcessedSegment, ProcessingMode, TranslationJob, AudioGenerationJob",
             "Removed legacy interfaces: VideoScrapingService, TranscriptProcessingService, TranscriptEnhancementService",
             "Updated TTSService interface to remove AudioGenerationJob dependency",
-            "Updated NewTranslationPipeline to use new TTSService signature",
+            "Updated TranslationPipeline to use new TTSService signature",
             "Cleaned up legacy imports in __init__.py",
             "Removed legacy test fixtures and test files",
             "Updated package exports to remove deprecated components"
@@ -220,7 +219,7 @@
             "Improved code maintainability by eliminating technical debt"
           ],
           "migration_impact": [
-            "Legacy pipeline (TranslationPipeline) deprecated - use NewTranslationPipeline",
+            "Legacy pipeline (TranslationPipeline) deprecated - use TranslationPipeline",
             "Legacy services (VideoScrapingService, TranscriptProcessingService) removed",
             "Legacy models removed - use new alignment-based models instead",
             "Test suite updated to focus on current architecture",
@@ -446,8 +445,8 @@
       "description": "Pipeline orchestrators that coordinate the execution of multiple services in sequence",
       "implementations": [
         {
-          "name": "NewTranslationPipeline",
-          "file_path": "src/videodub/core/new_pipeline.py",
+          "name": "TranslationPipeline",
+          "file_path": "src/videodub/core/pipeline.py",
           "status": "Current - Phase 3 Complete",
           "description": "Modern pipeline orchestrator with AlignmentService integration and A/B testing support",
           "architecture": "video → data_extraction → translation → alignment → tts → audio → video",
@@ -493,7 +492,7 @@
             "VideoProcessingService",
             "StorageService"
           ],
-          "migration_notes": "Being replaced by NewTranslationPipeline in Phase 6"
+          "migration_notes": "Being replaced by TranslationPipeline in Phase 6"
         }
       ]
     },
