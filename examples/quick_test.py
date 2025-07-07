@@ -6,7 +6,20 @@ import os
 import time
 from pathlib import Path
 
-from videodub import TTSEngine, configure_logging, create_pipeline
+from pathlib import Path
+from videodub import (
+    TTSEngine,
+    configure_logging,
+    OpenAITranslationService,
+    create_tts_service,
+    create_audio_processing_service,
+    FFmpegVideoProcessingService,
+    FileStorageService,
+)
+from videodub.core.pipeline import TranslationPipeline
+from videodub.services.data_extraction import YouTubeDataExtractionService
+from videodub.services.alignment import TimingAlignmentService
+from videodub.core.models import PipelineConfig
 from videodub.utils.cost_tracking import (
     get_session_cost_summary,
     reset_global_cost_tracker,
@@ -47,13 +60,27 @@ async def quick_translation_test(
         print("❌ OPENAI_API_KEY not found in environment")
         return None
 
+    # Create output directory
+    output_path = Path(f"./quick_test_output/{openai_model.replace('.', '_')}")
+    output_path.mkdir(parents=True, exist_ok=True)
+    
     # Create pipeline with test-specific settings
-    pipeline = create_pipeline(
-        output_directory=f"./quick_test_output/{openai_model.replace('.', '_')}",
-        target_language=target_language,
-        tts_engine=tts_engine,
-        openai_api_key=openai_api_key,
-        translation_model=openai_model,
+    pipeline = TranslationPipeline(
+        data_extraction_service=YouTubeDataExtractionService(output_dir=output_path),
+        translation_service=OpenAITranslationService(
+            api_key=openai_api_key,
+            model=openai_model
+        ),
+        alignment_service=TimingAlignmentService(),
+        tts_service=create_tts_service(engine=tts_engine, openai_api_key=openai_api_key),
+        audio_processing_service=create_audio_processing_service(),
+        video_processing_service=FFmpegVideoProcessingService(),
+        storage_service=FileStorageService(base_path=output_path),
+        config=PipelineConfig(
+            target_language=target_language,
+            tts_engine=tts_engine,
+            output_directory=str(output_path),
+        )
     )
 
     start_time = time.time()

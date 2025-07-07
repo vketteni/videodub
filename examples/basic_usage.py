@@ -5,12 +5,21 @@ import asyncio
 import os
 from pathlib import Path
 
+from pathlib import Path
 from videodub import (
     TTSEngine,
     configure_logging,
-    create_pipeline,
-    create_simple_pipeline,
+    OpenAITranslationService,
+    FallbackTranslationService,
+    create_tts_service,
+    create_audio_processing_service,
+    FFmpegVideoProcessingService,
+    FileStorageService,
 )
+from videodub.core.pipeline import TranslationPipeline
+from videodub.services.data_extraction import YouTubeDataExtractionService
+from videodub.services.alignment import TimingAlignmentService
+from videodub.core.models import PipelineConfig
 
 
 async def basic_translation_example():
@@ -22,24 +31,49 @@ async def basic_translation_example():
 
     # Get OpenAI API key from environment
     openai_api_key = os.getenv("OPENAI_API_KEY")
-
+    
+    # Create output directory
+    output_path = Path("./example_output")
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Create services
+    data_extraction = YouTubeDataExtractionService(output_dir=output_path)
+    alignment = TimingAlignmentService()
+    
     if openai_api_key:
         # Create pipeline with OpenAI services
-        pipeline = create_pipeline(
-            output_directory="./example_output",
-            target_language="es",  # Spanish
-            tts_engine=TTSEngine.OPENAI,
-            openai_api_key=openai_api_key,
-        )
+        translation = OpenAITranslationService(api_key=openai_api_key)
+        tts = create_tts_service(engine=TTSEngine.OPENAI, openai_api_key=openai_api_key)
         print("✅ Using OpenAI for translation and TTS")
     else:
         # Fallback to system TTS
-        pipeline = create_pipeline(
-            output_directory="./example_output",
-            target_language="es",
-            tts_engine=TTSEngine.SYSTEM,
-        )
+        translation = FallbackTranslationService()
+        tts = create_tts_service(engine=TTSEngine.SYSTEM)
         print("⚠️  No OpenAI API key found, using fallback translation and system TTS")
+    
+    # Create other services
+    audio_processing = create_audio_processing_service()
+    video_processing = FFmpegVideoProcessingService()
+    storage = FileStorageService(base_path=output_path)
+    
+    # Create pipeline config
+    config = PipelineConfig(
+        target_language="es",  # Spanish
+        tts_engine=TTSEngine.OPENAI if openai_api_key else TTSEngine.SYSTEM,
+        output_directory=str(output_path),
+    )
+    
+    # Create pipeline
+    pipeline = TranslationPipeline(
+        data_extraction_service=data_extraction,
+        translation_service=translation,
+        alignment_service=alignment,
+        tts_service=tts,
+        audio_processing_service=audio_processing,
+        video_processing_service=video_processing,
+        storage_service=storage,
+        config=config
+    )
 
     # Process a video
     video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
@@ -70,28 +104,57 @@ async def basic_translation_example():
 
 
 async def simple_pipeline_example():
-    """Example using the simple pipeline factory."""
+    """Example using the new pipeline with simpler configuration."""
     print("\n=== Simple Pipeline Example ===")
 
     # Create simple pipeline (auto-detects API key)
-    pipeline = create_simple_pipeline(openai_api_key=os.getenv("OPENAI_API_KEY"))
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    
+    # Create output directory
+    output_path = Path("./simple_output")
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Create services with minimal configuration
+    data_extraction = YouTubeDataExtractionService(output_dir=output_path)
+    alignment = TimingAlignmentService()
+    
+    # Auto-detect best translation service
+    translation = OpenAITranslationService(api_key=openai_api_key) if openai_api_key else FallbackTranslationService()
+    tts = create_tts_service(engine=TTSEngine.OPENAI if openai_api_key else TTSEngine.SYSTEM, openai_api_key=openai_api_key)
+    
+    # Create pipeline
+    pipeline = TranslationPipeline(
+        data_extraction_service=data_extraction,
+        translation_service=translation,
+        alignment_service=alignment,
+        tts_service=tts,
+        audio_processing_service=create_audio_processing_service(),
+        video_processing_service=FFmpegVideoProcessingService(),
+        storage_service=FileStorageService(base_path=output_path),
+        config=PipelineConfig(
+            target_language="fr",  # French
+            tts_engine=TTSEngine.OPENAI if openai_api_key else TTSEngine.SYSTEM,
+            output_directory=str(output_path),
+        )
+    )
 
-    # Get pipeline status
+    # Test with a simple video
     try:
-        status = await pipeline.get_pipeline_status()
-
-        print(f"📈 Pipeline Status:")
-        print(f"  Target Language: {status['pipeline_config']['target_language']}")
-        print(f"  TTS Engine: {status['pipeline_config']['tts_engine']}")
-        print(f"  Total Videos: {status['summary']['total_videos']}")
-        print(f"  Completed: {status['summary']['completed']}")
-        print(f"  Failed: {status['summary']['failed']}")
-
-        if status["storage"]:
-            print(f"  Storage: {status['storage']['total_size_mb']} MB")
+        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        print(f"🎬 Testing pipeline with: {video_url}")
+        
+        result = await pipeline.process_video(video_url)
+        
+        print(f"📈 Pipeline Result:")
+        print(f"  Status: {result.status.value}")
+        print(f"  Target Language: {result.target_language}")
+        print(f"  TTS Engine: {result.tts_engine}")
+        
+        if result.files:
+            print(f"  Generated Files: {len(result.files)}")
 
     except Exception as e:
-        print(f"❌ Error getting status: {e}")
+        print(f"❌ Error testing pipeline: {e}")
 
 
 async def multi_language_example():
@@ -109,11 +172,24 @@ async def multi_language_example():
     for lang in languages:
         print(f"\n🌍 Translating to {lang}...")
 
-        pipeline = create_pipeline(
-            output_directory=f"./multi_lang_output/{lang}",
-            target_language=lang,
-            tts_engine=TTSEngine.OPENAI,
-            openai_api_key=openai_api_key,
+        # Create output directory for this language
+        output_path = Path(f"./multi_lang_output/{lang}")
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        # Create pipeline for this language
+        pipeline = TranslationPipeline(
+            data_extraction_service=YouTubeDataExtractionService(output_dir=output_path),
+            translation_service=OpenAITranslationService(api_key=openai_api_key),
+            alignment_service=TimingAlignmentService(),
+            tts_service=create_tts_service(engine=TTSEngine.OPENAI, openai_api_key=openai_api_key),
+            audio_processing_service=create_audio_processing_service(),
+            video_processing_service=FFmpegVideoProcessingService(),
+            storage_service=FileStorageService(base_path=output_path),
+            config=PipelineConfig(
+                target_language=lang,
+                tts_engine=TTSEngine.OPENAI,
+                output_directory=str(output_path),
+            )
         )
 
         try:
@@ -124,49 +200,63 @@ async def multi_language_example():
             print(f"  ❌ {lang}: {e}")
 
 
-async def reprocess_existing_video_example():
-    """Example of reprocessing an existing video with new language."""
-    print("\n=== Reprocess Existing Video Example ===")
+async def alignment_strategies_example():
+    """Example showing different alignment strategies."""
+    print("\n=== Alignment Strategies Example ===")
 
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
-        print("⚠️  Skipping reprocess example (requires OpenAI API key)")
+        print("⚠️  Skipping alignment example (requires OpenAI API key)")
         return
 
-    pipeline = create_pipeline(
-        output_directory="./example_output",
-        target_language="es",
-        tts_engine=TTSEngine.OPENAI,
-        openai_api_key=openai_api_key,
+    # Create output directory
+    output_path = Path("./alignment_output")
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Create pipeline with alignment comparison support
+    pipeline = TranslationPipeline(
+        data_extraction_service=YouTubeDataExtractionService(output_dir=output_path),
+        translation_service=OpenAITranslationService(api_key=openai_api_key),
+        alignment_service=TimingAlignmentService(),
+        tts_service=create_tts_service(engine=TTSEngine.OPENAI, openai_api_key=openai_api_key),
+        audio_processing_service=create_audio_processing_service(),
+        video_processing_service=FFmpegVideoProcessingService(),
+        storage_service=FileStorageService(base_path=output_path),
+        config=PipelineConfig(
+            target_language="es",
+            tts_engine=TTSEngine.OPENAI,
+            output_directory=str(output_path),
+        )
     )
 
-    # Assume we have a previously processed video
     try:
-        # Get list of existing videos
-        status = await pipeline.get_pipeline_status()
-        processed_videos = status.get("processed_videos", [])
-
-        if processed_videos:
-            video_id = processed_videos[0]["video_id"]
-            print(f"🔄 Reprocessing video {video_id} to French...")
-
-            result = await pipeline.process_existing_video(
-                video_id=video_id, new_target_language="fr"
-            )
-
-            print(f"  ✅ Reprocessing: {result.status.value}")
-        else:
-            print("  ℹ️  No existing videos found to reprocess")
+        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        print(f"🎬 Testing alignment strategies with: {video_url}")
+        
+        # Process with alignment comparison to test multiple strategies
+        result = await pipeline.process_video_with_alignment_comparison(video_url)
+        
+        print(f"📊 Alignment Comparison Results:")
+        print(f"  Status: {result.status.value}")
+        print(f"  Best Strategy: {result.alignment_evaluation.best_strategy if result.alignment_evaluation else 'N/A'}")
+        
+        if result.alignment_evaluation:
+            print(f"  Strategies Tested: {len(result.alignment_evaluation.strategy_results)}")
+            for strategy, eval_result in result.alignment_evaluation.strategy_results.items():
+                print(f"    {strategy}: Score {eval_result.overall_score:.3f}")
 
     except Exception as e:
-        print(f"  ❌ Error reprocessing: {e}")
+        print(f"❌ Alignment example error: {e}")
 
 
-async def batch_processing_example():
-    """Example of processing multiple videos in batch."""
-    print("\n=== Batch Processing Example ===")
+async def sequential_processing_example():
+    """Example of processing multiple videos sequentially."""
+    print("\n=== Sequential Processing Example ===")
 
-    pipeline = create_simple_pipeline(openai_api_key=os.getenv("OPENAI_API_KEY"))
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        print("⚠️  Skipping sequential example (requires OpenAI API key)")
+        return
 
     # Multiple video URLs (using same URL for demo)
     video_urls = [
@@ -174,20 +264,43 @@ async def batch_processing_example():
         "https://www.youtube.com/watch?v=9bZkp7q19f0",
     ]
 
-    print(f"🎬 Processing {len(video_urls)} videos...")
+    print(f"🎬 Processing {len(video_urls)} videos sequentially...")
 
     results = []
-    try:
-        async for result in pipeline.process_video_batch(video_urls, max_concurrent=2):
+    for i, url in enumerate(video_urls):
+        print(f"\n📹 Processing video {i+1}/{len(video_urls)}: {url}")
+        
+        # Create output directory for each video
+        output_path = Path(f"./sequential_output/video_{i+1}")
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        # Create pipeline for this video
+        pipeline = TranslationPipeline(
+            data_extraction_service=YouTubeDataExtractionService(output_dir=output_path),
+            translation_service=OpenAITranslationService(api_key=openai_api_key),
+            alignment_service=TimingAlignmentService(),
+            tts_service=create_tts_service(engine=TTSEngine.OPENAI, openai_api_key=openai_api_key),
+            audio_processing_service=create_audio_processing_service(),
+            video_processing_service=FFmpegVideoProcessingService(),
+            storage_service=FileStorageService(base_path=output_path),
+            config=PipelineConfig(
+                target_language="es",
+                tts_engine=TTSEngine.OPENAI,
+                output_directory=str(output_path),
+            )
+        )
+        
+        try:
+            result = await pipeline.process_video(url)
             results.append(result)
-            print(f"  📹 {result.video_id}: {result.status.value}")
+            print(f"  ✅ Video {i+1}: {result.status.value}")
 
-    except Exception as e:
-        print(f"❌ Batch processing error: {e}")
+        except Exception as e:
+            print(f"  ❌ Video {i+1}: {e}")
 
     # Summary
     successful = len([r for r in results if r.status.value == "completed"])
-    print(f"\n📊 Batch Results: {successful}/{len(video_urls)} successful")
+    print(f"\n📊 Sequential Results: {successful}/{len(video_urls)} successful")
 
 
 async def main():
@@ -199,14 +312,15 @@ async def main():
         await basic_translation_example()
         await simple_pipeline_example()
         await multi_language_example()
-        await reprocess_existing_video_example()
-        await batch_processing_example()
+        await alignment_strategies_example()
+        await sequential_processing_example()
 
         print("\n✅ All examples completed!")
         print("\n💡 Tips:")
         print("  - Set OPENAI_API_KEY environment variable for full functionality")
         print("  - Check the output directories for generated files")
         print("  - Use the Makefile for development tasks: make help")
+        print("  - Examples now use the new TranslationPipeline with alignment services")
 
     except KeyboardInterrupt:
         print("\n⚠️  Examples interrupted by user")
