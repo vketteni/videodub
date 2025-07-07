@@ -191,6 +191,108 @@
         "problem": "Current overlapping segments (4+ simultaneous) make alignment difficult",
         "affects": ["DataExtractionService", "AlignmentService", "AudioProcessingService"]
       }
+    },
+    "current_implementation": {
+      "adr_0006_implementation": {
+        "status": "In Progress",
+        "description": "Speech Timing Model Redesign - Fix YouTube Data Misinterpretation with Proper Separation of Concerns",
+        "current_phase": "Phase 1: Model Enhancement",
+        "critical_insight": "YouTube duration = subtitle display time (NOT speech time). Preserve all data with correct labels, move speech estimation to AlignmentService to maintain separation of concerns.",
+        "pipeline_design": {
+          "data_extraction": "Preserve YouTube data with correct labels: start_time, subtitle_display_duration, text, end_time=None",
+          "translation": "Pure text translation, no timing changes",
+          "alignment": "Complete timing here: end_time = start_time + estimated_speech_duration(text)",
+          "audio_processing": "Works with corrected speech timing"
+        },
+        "phases": [
+          {
+            "phase": 1,
+            "name": "Model Enhancement",
+            "duration": "2-3 days",
+            "status": "pending",
+            "components": ["Enhanced TranscriptSegment Model", "Speech Duration Estimator"],
+            "files": ["src/videodub/core/models.py", "src/videodub/core/speech_estimation.py"],
+            "goal": "Preserve all YouTube data with correct labels, create speech estimation foundation",
+            "key_changes": [
+              "TranscriptSegment: add subtitle_display_duration field (preserve YouTube duration)",
+              "TranscriptSegment: end_time becomes optional (incomplete timing from extraction)", 
+              "Create SpeechDurationEstimator for AlignmentService to use"
+            ]
+          },
+          {
+            "phase": 2,
+            "name": "Data Extraction Update", 
+            "duration": "1-2 days",
+            "status": "pending",
+            "components": ["YouTubeDataExtractionService Updates", "Timing Metadata Clarification"],
+            "files": ["src/videodub/services/data_extraction.py"],
+            "goal": "Output incomplete timing with preserved YouTube data, correctly labeled",
+            "key_changes": [
+              "Set end_time=None (incomplete timing)",
+              "Store YouTube duration as subtitle_display_duration",
+              "Update timing metadata to reflect incomplete timing"
+            ]
+          },
+          {
+            "phase": 3,
+            "name": "Alignment Service Enhancement",
+            "duration": "2-3 days", 
+            "status": "pending",
+            "components": ["Speech Duration Integration", "Timing Completion Logic"],
+            "files": ["src/videodub/services/alignment.py"],
+            "goal": "Complete timing in AlignmentService using speech estimation",
+            "key_changes": [
+              "Integrate SpeechDurationEstimator into AlignmentService",
+              "Complete end_time calculation: start_time + estimated_speech_duration",
+              "Handle natural pauses between speech segments"
+            ]
+          },
+          {
+            "phase": 4,
+            "name": "Audio Pipeline Validation",
+            "duration": "1-2 days",
+            "status": "pending", 
+            "components": ["TTS Service Validation", "Audio Processing Validation"],
+            "files": ["src/videodub/services/audio.py", "src/videodub/services/tts.py"],
+            "goal": "Validate audio pipeline works with corrected speech timing",
+            "key_changes": [
+              "Verify TTS works with speech-only durations",
+              "Handle natural pauses in audio processing",
+              "Test end-to-end audio generation"
+            ]
+          },
+          {
+            "phase": 5,
+            "name": "Testing & Validation",
+            "duration": "1-2 days",
+            "status": "pending",
+            "components": ["Speech Timing Tests", "Pipeline Integration Tests"],
+            "files": ["tests/"],
+            "goal": "Comprehensive testing of corrected timing model",
+            "key_changes": [
+              "Test speech duration estimation accuracy",
+              "Validate zero overlapping segments",
+              "End-to-end pipeline tests"
+            ]
+          },
+          {
+            "phase": 6,
+            "name": "Documentation & Future Planning", 
+            "duration": "1 day",
+            "status": "pending",
+            "components": ["Documentation Updates", "Model Refactoring Planning"],
+            "files": ["docs/architecture/", "docs/adr/0006-speech-timing-model-redesign.md"],
+            "goal": "Document changes and plan future model name refactoring",
+            "key_changes": [
+              "Update architecture documentation",
+              "Plan future refactoring of misleading model names (TimedTranscript, etc.)"
+            ]
+          }
+        ],
+        "total_estimated_duration": "8-12 days",
+        "success_criteria": "Zero overlapping segments, natural speech timing, preserved YouTube data with correct labels, maintained separation of concerns",
+        "future_work": "Refactor misleading model names (TimedTranscript, TimedTranslation) to better reflect actual data flow"
+      }
     }
   }
 }
