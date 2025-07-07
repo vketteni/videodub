@@ -18,6 +18,8 @@ from .core.exceptions import (
     AudioProcessingError,
     AuthenticationError,
     ConfigurationError,
+    DataExtractionError,
+    AlignmentError,
     PipelineError,
     QuotaExceededError,
     RateLimitError,
@@ -25,7 +27,6 @@ from .core.exceptions import (
     TranslationError,
     TTSError,
     ValidationError,
-    VideoScrapingError,
 )
 
 # Core imports
@@ -38,16 +39,9 @@ from .core.models import (
     TTSEngine,
     VideoMetadata,
 )
-# Legacy pipeline - use new_pipeline.py instead
-# from .core.pipeline import TranslationPipeline
-from .services.audio import create_audio_processing_service
-
 # Services
-# Legacy services - deprecated
-# from .services.scraper import YouTubeScrapingService
+from .services.audio import create_audio_processing_service
 from .services.storage import FileStorageService
-# Legacy transcript processing - deprecated
-# from .services.transcript import HybridTranscriptProcessingService, ProcessingConfig
 from .services.translator import FallbackTranslationService, OpenAITranslationService
 from .services.tts import OpenAITTSService, SystemTTSService, create_tts_service
 from .services.video import FFmpegVideoProcessingService
@@ -75,7 +69,8 @@ __all__ = [
     "PipelineConfig",
     # Exceptions
     "PipelineError",
-    "VideoScrapingError",
+    "DataExtractionError",
+    "AlignmentError",
     "TranslationError",
     "TTSError",
     "ConfigurationError",
@@ -106,5 +101,5 @@ __all__ = [
     "configure_logging",
     "get_logger",
     "setup_pipeline_logging",
-    # NOTE: Legacy services and pipeline removed - use NewTranslationPipeline from core.new_pipeline
+    # Main pipeline available at: from videodub.core.pipeline import TranslationPipeline
 ]

@@ -22,16 +22,6 @@ class TranslationError(PipelineError):
     pass
 
 
-class TranscriptProcessingError(PipelineError):
-    """Error during transcript processing."""
-
-    pass
-
-
-class TranscriptEnhancementError(PipelineError):
-    """Error during AI-powered transcript enhancement."""
-
-    pass
 
 
 class DataExtractionError(PipelineError):
