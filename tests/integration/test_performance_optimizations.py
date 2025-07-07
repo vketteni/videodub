@@ -21,7 +21,7 @@ from videodub.core.models import (
     TTSEngine,
     VideoMetadata,
 )
-from videodub.core.new_pipeline import NewTranslationPipeline
+from videodub.core.pipeline import TranslationPipeline
 from videodub.services.optimized_translator import OptimizedOpenAITranslationService, ConcurrentTTSOptimizer
 
 
@@ -354,7 +354,7 @@ class TestPerformanceOptimizations:
             output_directory=tmp_path,
         )
         
-        pipeline = NewTranslationPipeline(
+        pipeline = TranslationPipeline(
             data_extraction_service=data_service,
             translation_service=translation_service,
             alignment_service=alignment_service,

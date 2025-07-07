@@ -31,7 +31,7 @@ from videodub.core.models import (
     TTSEngine,
     VideoMetadata,
 )
-from videodub.core.new_pipeline import NewTranslationPipeline
+from videodub.core.pipeline import TranslationPipeline
 
 
 class TestPipelineIntegration:
@@ -211,8 +211,8 @@ class TestPipelineIntegration:
 
     @pytest.fixture
     def pipeline(self, mock_services, pipeline_config):
-        """Create NewTranslationPipeline with mocked services."""
-        return NewTranslationPipeline(
+        """Create TranslationPipeline with mocked services."""
+        return TranslationPipeline(
             data_extraction_service=mock_services["data_extraction"],
             translation_service=mock_services["translation"],
             alignment_service=mock_services["alignment"],
@@ -368,8 +368,8 @@ class TestPipelineIntegration:
         test_url = "https://youtube.com/watch?v=test"
         
         # Mock cost tracking
-        with patch("videodub.core.new_pipeline.reset_global_cost_tracker") as mock_reset, \
-             patch("videodub.core.new_pipeline.get_session_cost_summary") as mock_get_summary:
+        with patch("videodub.core.pipeline.reset_global_cost_tracker") as mock_reset, \
+             patch("videodub.core.pipeline.get_session_cost_summary") as mock_get_summary:
             
             mock_get_summary.return_value = {
                 "total_cost": 0.25,

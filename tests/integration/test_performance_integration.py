@@ -29,7 +29,7 @@ from videodub.core.models import (
     TTSEngine,
     VideoMetadata,
 )
-from videodub.core.new_pipeline import NewTranslationPipeline
+from videodub.core.pipeline import TranslationPipeline
 
 # Test configuration for different environments
 TEST_CONFIG = {
@@ -227,7 +227,7 @@ class TestPerformanceIntegration:
             output_directory=tmp_path,
         )
 
-        return NewTranslationPipeline(
+        return TranslationPipeline(
             data_extraction_service=performance_mock_services["data_extraction"],
             translation_service=performance_mock_services["translation"],
             alignment_service=performance_mock_services["alignment"],
@@ -418,7 +418,7 @@ class TestPerformanceIntegration:
         )
 
         # Create pipeline with timing tracking
-        pipeline = NewTranslationPipeline(
+        pipeline = TranslationPipeline(
             data_extraction_service=performance_mock_services["data_extraction"],
             translation_service=performance_mock_services["translation"],
             alignment_service=performance_mock_services["alignment"],
@@ -589,7 +589,7 @@ class TestPerformanceIntegration:
             output_directory=tmp_path,
         )
 
-        pipeline = NewTranslationPipeline(
+        pipeline = TranslationPipeline(
             data_extraction_service=performance_mock_services["data_extraction"],
             translation_service=performance_mock_services["translation"],
             alignment_service=performance_mock_services["alignment"],
