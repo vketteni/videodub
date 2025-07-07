@@ -5,6 +5,7 @@ import asyncio
 import os
 import time
 from pathlib import Path
+from dotenv import load_dotenv
 
 from pathlib import Path
 from videodub import (
@@ -24,6 +25,9 @@ from videodub.utils.cost_tracking import (
     get_session_cost_summary,
     reset_global_cost_tracker,
 )
+
+# Load environment variables at module level
+load_dotenv()
 
 
 async def quick_translation_test(
@@ -58,6 +62,7 @@ async def quick_translation_test(
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
         print("❌ OPENAI_API_KEY not found in environment")
+        print(f"Current working directory: {os.getcwd()}")
         return None
 
     # Create output directory
@@ -72,10 +77,10 @@ async def quick_translation_test(
             model=openai_model
         ),
         alignment_service=TimingAlignmentService(),
-        tts_service=create_tts_service(engine=tts_engine, openai_api_key=openai_api_key),
-        audio_processing_service=create_audio_processing_service(),
+        tts_service=create_tts_service(engine=tts_engine, api_key=openai_api_key),
+        audio_service=create_audio_processing_service(),
         video_processing_service=FFmpegVideoProcessingService(),
-        storage_service=FileStorageService(base_path=output_path),
+        storage_service=FileStorageService(base_directory=output_path),
         config=PipelineConfig(
             target_language=target_language,
             tts_engine=tts_engine,
@@ -130,9 +135,15 @@ async def quick_translation_test(
 
         if result.files:
             print(f"\n📁 Generated Files:")
-            for file_type, file_path in result.files.items():
-                size = Path(file_path).stat().st_size if Path(file_path).exists() else 0
-                print(f"   {file_type}: {file_path} ({size/1024:.1f}KB)")
+            for file_type, file_value in result.files.items():
+                # Handle both file paths (strings) and other data (dicts)
+                if isinstance(file_value, str):
+                    # It's a file path
+                    size = Path(file_value).stat().st_size if Path(file_value).exists() else 0
+                    print(f"   {file_type}: {file_value} ({size/1024:.1f}KB)")
+                else:
+                    # It's other data (like alignment_evaluation dict)
+                    print(f"   {file_type}: {file_value}")
 
         if result.errors:
             print(f"\n⚠️  Errors: {result.errors}")
