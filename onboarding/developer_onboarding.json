@@ -1,6 +1,6 @@
 {
-  "architecture_overview": {
-    "description": "This project consists of several interconnected modules that work together to create a complete video translation workflow.",
+  "getting_started": {
+    "description": "Modern video translation pipeline with clean service architecture - get up and running quickly",
     "project_info": {
       "main_entry_point": "src/videodub/core/pipeline.py",
       "cli_command": "python examples/quick_test.py",
@@ -13,28 +13,30 @@
       "api_keys_optional": ["GOOGLE_APPLICATION_CREDENTIALS", "AZURE_SPEECH_KEY"]
     },
     "development": {
-      "current_issues": [],
+      "install_command": "poetry install",
       "test_command": "make test",
       "lint_command": "make lint",
       "format_command": "make format",
-      "install_command": "poetry install"
+      "quick_test": "python examples/quick_test.py"
     },
     "key_files": {
       "main_pipeline": "src/videodub/core/pipeline.py",
-      "legacy_pipeline": "src/videodub/core/pipeline.py",
-      "alignment_service": "src/videodub/services/alignment.py",
-      "translation_service": "src/videodub/services/translator.py",
-      "optimized_translation": "src/videodub/services/optimized_translator.py",
+      "service_interfaces": "src/videodub/core/interfaces.py",
+      "data_models": "src/videodub/core/models.py",
       "configuration": "src/videodub/config/settings.py",
-      "models": "src/videodub/core/models.py",
-      "interfaces": "src/videodub/core/interfaces.py"
+      "examples": "examples/"
     },
     "documentation": {
+      "architecture_overview": {
+        "location": "docs/architecture/",
+        "current_architecture": "docs/architecture/current_architecture.md",
+        "description": "Complete technical overview of the current system"
+      },
       "architecture_decisions": {
         "location": "docs/adr/",
         "index": "docs/adr/README.md",
-        "description": "Architecture Decision Records documenting key design decisions and their rationale",
-        "key_adrs": [
+        "description": "Architecture Decision Records documenting key design decisions",
+        "key_current_adrs": [
           {
             "adr": "0001",
             "title": "Pipeline Architecture Design",
@@ -48,12 +50,6 @@
             "relevance": "Cost monitoring and analytics"
           },
           {
-            "adr": "0003",
-            "title": "Transcript Processing Service Redesign", 
-            "status": "Superseded by ADR-0005",
-            "relevance": "Step 2 implementation approach"
-          },
-          {
             "adr": "0004",
             "title": "Pipeline Step Evaluation Framework",
             "status": "Proposed",
@@ -62,8 +58,9 @@
           {
             "adr": "0005",
             "title": "Pipeline Step Separation and Responsibility Alignment",
-            "status": "In Progress - Phase 3 Complete",
-            "relevance": "Fundamental pipeline architecture redesign"
+            "status": "Complete - Implementation Archived",
+            "relevance": "Fundamental pipeline architecture - see implementation archive",
+            "implementation_archive": "docs/architecture/adr_0005_implementation/"
           }
         ]
       },
@@ -71,10 +68,8 @@
         "location": "evaluation/",
         "implementation_guide": "evaluation/README.md",
         "description": "Pipeline step evaluation framework for quality assessment and human review",
-        "status": "Phase 1 Complete",
+        "status": "Active",
         "usage": "poetry run python3 evaluation/scripts/run_evaluation.py --help",
-        "implemented_steps": ["transcript_processing", "alignment"],
-        "planned_steps": ["translation", "tts", "audio_processing"],
         "key_features": [
           "Human-readable before/after comparisons",
           "Configuration A/B testing",
@@ -87,11 +82,6 @@
         "location": "docs/testing_strategy.md",
         "description": "Environment-adaptive testing strategy with CI/Local configurations",
         "status": "Complete",
-        "key_features": [
-          "Environment-adaptive testing (CI vs Local)",
-          "Performance testing with realistic timing expectations",
-          "Fast/slow test categorization for optimal CI usage"
-        ],
         "commands": {
           "fast_tests": "make test-fast",
           "performance_fast": "make test-performance-fast",
@@ -99,146 +89,18 @@
         }
       }
     },
-    "current_refactoring": {
-      "status": "In Progress - ADR 0005 Implementation",
-      "description": "Implementing pipeline step separation and responsibility alignment",
-      "completed_phases": [
-        {
-          "phase": 1,
-          "name": "Data Extraction Service Implementation",
-          "status": "Complete",
-          "deliverables": [
-            "DataExtractionService interface (src/videodub/core/interfaces.py)",
-            "YouTubeDataExtractionService implementation (src/videodub/services/data_extraction.py)",
-            "TimedTranscript, TimingMetadata, SourceType models (src/videodub/core/models.py)",
-            "DataExtractionError exception (src/videodub/core/exceptions.py)",
-            "Comprehensive test suite (tests/unit/test_data_extraction.py)"
-          ]
-        },
-        {
-          "phase": 2,
-          "name": "Translation Service Refactoring",
-          "status": "Complete",
-          "deliverables": [
-            "Refactored TranslationService interface to pure text-to-text (src/videodub/core/interfaces.py)",
-            "Updated OpenAITranslationService implementation (src/videodub/services/translator.py)",
-            "Updated FallbackTranslationService implementation (src/videodub/services/translator.py)",
-            "Removed all timing logic and segment-based methods",
-            "Comprehensive test suite (tests/unit/test_translation_service.py)",
-            "18 tests covering all functionality, edge cases, and interface compliance"
-          ],
-          "key_changes": [
-            "translate_text(text: str, target_language: str) -> str",
-            "translate_batch(texts: list[str], target_language: str) -> list[str]",
-            "Removed translate_segments() and segment-based translate_batch()",
-            "Clean separation: List[str] → TranslationService → List[str]"
-          ]
-        },
-        {
-          "phase": 3,
-          "name": "Alignment Service Implementation",
-          "status": "Complete",
-          "deliverables": [
-            "AlignmentService interface with A/B testing support (src/videodub/core/interfaces.py)",
-            "TimingAlignmentService implementation (src/videodub/services/alignment.py)",
-            "TimedTranslation, TimedTranslationSegment, AlignmentConfig, AlignmentEvaluation models (src/videodub/core/models.py)",
-            "AlignmentStrategy enum with 5 strategies (LENGTH_BASED, SENTENCE_BOUNDARY, SEMANTIC_SIMILARITY, HYBRID, DYNAMIC_PROGRAMMING)",
-            "AlignmentError exception (src/videodub/core/exceptions.py)",
-            "TranslationPipeline with full integration (src/videodub/core/pipeline.py)",
-            "Enhanced StorageService interface for new models (src/videodub/core/interfaces.py)",
-            "Comprehensive test suite (tests/unit/test_alignment_service.py, tests/unit/test_pipeline.py)",
-            "16 alignment tests + 8 pipeline integration tests covering all strategies and A/B testing"
-          ],
-          "key_changes": [
-            "align_translation(TimedTranscript, List[str], target_language, AlignmentConfig) -> TimedTranslation",
-            "evaluate_alignment() and compare_alignments() for A/B testing",
-            "Multiple alignment strategies with configurable parameters",
-            "Quality metrics: timing_accuracy, text_preservation, boundary_alignment, overall_score",
-            "Integration with existing evaluation framework",
-            "Clean data flow: TimedTranscript + List[str] → TimedTranslation"
-          ],
-          "a_b_testing_features": [
-            "Multiple alignment strategy comparison in single run",
-            "Automated quality scoring and ranking",
-            "Execution time and confidence tracking",
-            "Comprehensive evaluation metrics",
-            "Integration with evaluation framework"
-          ]
-        },
-        {
-          "phase": 4,
-          "name": "Integration Testing and Performance Optimization",
-          "status": "Complete",
-          "deliverables": [
-            "Comprehensive integration test suite (tests/integration/)",
-            "End-to-end pipeline integration tests (9 tests)",
-            "Service integration tests (8 tests)",
-            "Performance integration tests (10 tests)",
-            "Performance optimization implementations (src/videodub/services/optimized_translator.py)",
-            "Performance analysis documentation (docs/performance_analysis_phase4.md)",
-            "Bottleneck identification and optimization strategies",
-            "Concurrent processing optimizations"
-          ],
-          "performance_improvements": [
-            "Translation batch optimization: 90% performance improvement",
-            "Concurrent TTS generation: 2.4x speedup",
-            "Pipeline throughput: 5.8 segments/second baseline",
-            "Memory efficiency validation for large datasets",
-            "Error handling performance under 1s",
-            "Concurrent processing 3x faster than sequential"
-          ],
-          "test_coverage": [
-            "Complete pipeline flow validation",
-            "Service integration and data flow",
-            "Error handling and recovery",
-            "Performance benchmarking",
-            "Memory usage optimization",
-            "Concurrent processing validation"
-          ]
-        },
-        {
-          "phase": 5,
-          "name": "Legacy Cleanup",
-          "status": "Complete",
-          "deliverables": [
-            "Removed legacy models: ProcessedSegment, ProcessingMode, TranslationJob, AudioGenerationJob",
-            "Removed legacy interfaces: VideoScrapingService, TranscriptProcessingService, TranscriptEnhancementService",
-            "Updated TTSService interface to remove AudioGenerationJob dependency",
-            "Updated TranslationPipeline to use new TTSService signature",
-            "Cleaned up legacy imports in __init__.py",
-            "Removed legacy test fixtures and test files",
-            "Updated package exports to remove deprecated components"
-          ],
-          "cleanup_actions": [
-            "Removed 4 legacy model classes from core/models.py",
-            "Removed 3 legacy interface classes from core/interfaces.py", 
-            "Updated TTSService.generate_batch_audio() method signature",
-            "Removed legacy factory functions from __init__.py",
-            "Removed test_transcript_processing.py test file",
-            "Updated test fixtures to remove legacy dependencies",
-            "Improved code maintainability by eliminating technical debt"
-          ],
-          "migration_impact": [
-            "Legacy pipeline (TranslationPipeline) deprecated - use TranslationPipeline",
-            "Legacy services (VideoScrapingService, TranscriptProcessingService) removed",
-            "Legacy models removed - use new alignment-based models instead",
-            "Test suite updated to focus on current architecture",
-            "Package imports cleaned up - legacy components no longer exported"
-          ]
-        }
-      ],
-      "remaining_phases": [
-        {
-          "phase": 6,
-          "name": "Migration",
-          "description": "Migration of existing workflows to new pipeline",
-          "status": "Pending"
-        }
-      ],
-      "key_design_changes": {
-        "old_pipeline": "video → transcription → translation → tts → audio → video",
-        "new_pipeline": "video → data_extraction → translation → alignment → tts → audio → video",
-        "rationale": "Clean separation between data extraction, translation, and timing alignment"
+    "current_architecture": {
+      "status": "Modern Service-Based Architecture - ADR-0005 Complete",
+      "description": "Clean service-based architecture with separated responsibilities",
+      "implementation_history": {
+        "archive_location": "docs/architecture/adr_0005_implementation/",
+        "description": "Complete 6-phase implementation history archived for reference",
+        "status": "All phases complete - system fully migrated to modern architecture"
+      },
+      "architecture_evolution": {
+        "legacy_pipeline": "video → transcription → translation → tts → audio → video",
+        "modern_pipeline": "video → data_extraction → translation → alignment → tts → audio → video",
+        "key_improvement": "Clean separation between data extraction, translation, and timing alignment"
       }
     },
     "flow": [
@@ -420,95 +282,66 @@
         ]
       }
     ],
-    "legacy_components": [
-      {
-        "name": "Video Scraping (Legacy)",
-        "component": "VideoScrapingService",
-        "file_path": "src/videodub/services/scraper.py",
-        "implementation": "YouTubeScrapingService",
-        "status": "Deprecated - Replaced by DataExtractionService",
-        "migration_target": "DataExtractionService",
-        "common_errors": ["Video not found", "No transcript available", "video_scraper package missing"]
+    "quick_reference": {
+      "basic_usage": {
+        "description": "Get started with a basic video translation",
+        "example_location": "examples/basic_usage.py",
+        "quick_test": "python examples/quick_test.py"
       },
-      {
-        "name": "Transcript Processing (Legacy)",
-        "component": "TranscriptProcessingService", 
-        "file_path": "src/videodub/services/transcript.py",
-        "implementation": "HybridTranscriptProcessingService",
-        "status": "Deprecated - Logic redistributed to AlignmentService",
-        "migration_target": "AlignmentService",
-        "processing_modes": ["RULE_BASED", "AI_ENHANCED", "HYBRID"],
-        "migration_notes": "Text enhancement logic moved to AlignmentService, timing logic preserved in new alignment strategies"
-      }
-    ],
-    "pipeline_orchestration": {
-      "description": "Pipeline orchestrators that coordinate the execution of multiple services in sequence",
-      "implementations": [
+      "common_tasks": [
         {
-          "name": "TranslationPipeline",
-          "file_path": "src/videodub/core/pipeline.py",
-          "status": "Current - Phase 3 Complete",
-          "description": "Modern pipeline orchestrator with AlignmentService integration and A/B testing support",
-          "architecture": "video → data_extraction → translation → alignment → tts → audio → video",
-          "key_methods": {
-            "process_video()": "Standard video processing with single alignment strategy",
-            "process_video_with_alignment_comparison()": "A/B testing with multiple alignment strategies for evaluation"
-          },
-          "services_orchestrated": [
-            "DataExtractionService",
-            "TranslationService", 
-            "AlignmentService",
-            "TTSService",
-            "AudioProcessingService",
-            "VideoProcessingService",
-            "StorageService"
-          ],
-          "features": [
-            "Clean service separation and dependency injection",
-            "A/B testing with multiple alignment strategies",
-            "Comprehensive error handling and logging",
-            "Quality metrics and performance tracking",
-            "Integration with cost tracking",
-            "Alignment evaluation and comparison reports",
-            "Configurable alignment strategies",
-            "Automated best strategy selection"
-          ],
-          "input": ["Video URL", "AlignmentConfig (optional)"],
-          "output": ["ProcessingResult with alignment evaluation"],
-          "test_coverage": "8 comprehensive integration tests"
+          "task": "Process a YouTube video",
+          "example": "See examples/basic_usage.py",
+          "key_services": ["DataExtractionService", "TranslationService", "AlignmentService"]
         },
         {
-          "name": "TranslationPipeline",
-          "file_path": "src/videodub/core/pipeline.py",
-          "status": "Legacy - Pre-Phase 3",
-          "description": "Original pipeline implementation using legacy architecture",
-          "architecture": "video → scraping → transcript_processing → translation → tts → audio → video",
-          "services_orchestrated": [
-            "VideoScrapingService",
-            "TranscriptProcessingService",
-            "TranslationService",
-            "TTSService",
-            "AudioProcessingService", 
-            "VideoProcessingService",
-            "StorageService"
-          ],
-          "migration_notes": "Being replaced by TranslationPipeline in Phase 6"
+          "task": "Compare alignment strategies",
+          "example": "Use process_video_with_alignment_comparison()",
+          "key_services": ["AlignmentService with A/B testing"]
+        },
+        {
+          "task": "Optimize for performance",
+          "example": "Use OptimizedOpenAITranslationService",
+          "key_services": ["OptimizedTranslationService", "ConcurrentTTSOptimizer"]
         }
       ]
     },
-    "performance_optimizations": {
-      "description": "Phase 4 performance optimizations with dual implementation strategy",
-      "design_rationale": {
-        "dual_implementations": "Keep both standard and optimized implementations",
-        "reasons": [
-          "Backward compatibility with existing code and configurations",
-          "Gradual migration path from standard to optimized services",
-          "Fallback strategy if optimized versions encounter issues",
-          "Different use cases: standard for development, optimized for production"
+    "pipeline_architecture": {
+      "description": "Modern service-based pipeline with clean separation of concerns",
+      "main_pipeline": {
+        "name": "TranslationPipeline",
+        "file_path": "src/videodub/core/pipeline.py",
+        "status": "Production Ready",
+        "description": "Modern pipeline orchestrator with AlignmentService integration and A/B testing support",
+        "architecture": "video → data_extraction → translation → alignment → tts → audio → video",
+        "key_methods": {
+          "process_video()": "Standard video processing with single alignment strategy",
+          "process_video_with_alignment_comparison()": "A/B testing with multiple alignment strategies for evaluation"
+        },
+        "services_orchestrated": [
+          "DataExtractionService",
+          "TranslationService", 
+          "AlignmentService",
+          "TTSService",
+          "AudioProcessingService",
+          "VideoProcessingService",
+          "StorageService"
         ],
-        "migration_strategy": "Phase 5 will evaluate replacing standard implementations"
-      },
-      "implementations": [
+        "key_features": [
+          "Clean service separation and dependency injection",
+          "A/B testing with multiple alignment strategies",
+          "Comprehensive error handling and logging",
+          "Quality metrics and performance tracking",
+          "Integration with cost tracking",
+          "Alignment evaluation and comparison reports"
+        ],
+        "input": ["Video URL", "AlignmentConfig (optional)"],
+        "output": ["ProcessingResult with alignment evaluation"]
+      }
+    },
+    "performance_optimizations": {
+      "description": "Production-ready performance optimizations available alongside standard implementations",
+      "available_optimizations": [
         {
           "service": "Translation",
           "standard": {
@@ -533,7 +366,12 @@
             "improvements": "2.4x speedup via controlled concurrency"
           }
         }
-      ]
+      ],
+      "usage_guidance": {
+        "development": "Use standard implementations for development and testing",
+        "production": "Use optimized implementations for production workloads",
+        "performance_testing": "See docs/performance_analysis_phase4.md for detailed benchmarks"
+      }
     },
     "side_processes": [
       {
