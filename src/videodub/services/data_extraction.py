@@ -10,6 +10,7 @@ from ..config.validation import validate_video_url
 from ..core.exceptions import DataExtractionError
 from ..core.interfaces import DataExtractionService
 from ..core.models import (
+    DataExtractionResult,
     SourceType,
     TimedTranscript,
     TimingMetadata,
@@ -51,7 +52,7 @@ class YouTubeDataExtractionService(DataExtractionService):
                 "video_scraper package not available", details={"error": str(e)}
             )
 
-    async def extract_from_url(self, url: str) -> TimedTranscript:
+    async def extract_from_url(self, url: str) -> DataExtractionResult:
         """
         Extract transcript and timing data from video URL.
 
@@ -59,7 +60,7 @@ class YouTubeDataExtractionService(DataExtractionService):
             url: Video URL to extract from
 
         Returns:
-            TimedTranscript with extracted data
+            DataExtractionResult with extracted data and file paths
 
         Raises:
             DataExtractionError: If extraction fails
@@ -95,7 +96,18 @@ class YouTubeDataExtractionService(DataExtractionService):
                 quality=timed_transcript.extraction_quality,
             )
 
-            return timed_transcript
+            # Find the generated file paths
+            video_dir = self.output_dir / metadata.video_id
+            video_file_path = self._find_video_file(video_dir)
+            audio_file_path = self._find_audio_file(video_dir)
+            subtitle_file_path = self._find_subtitle_file(video_dir)
+
+            return DataExtractionResult(
+                timed_transcript=timed_transcript,
+                video_file_path=video_file_path,
+                audio_file_path=audio_file_path,
+                subtitle_file_path=subtitle_file_path,
+            )
 
         except Exception as e:
             logger.error("Data extraction failed", url=url, error=str(e))
@@ -106,7 +118,43 @@ class YouTubeDataExtractionService(DataExtractionService):
                 details={"url": url},
             )
 
-    async def extract_from_file(self, file_path: Path) -> TimedTranscript:
+    def _find_video_file(self, video_dir: Path) -> Optional[Path]:
+        """Find video file in the video directory."""
+        if not video_dir.exists():
+            return None
+        
+        video_extensions = ["*.mp4", "*.mkv", "*.webm", "*.avi", "*.mov"]
+        for pattern in video_extensions:
+            video_files = list(video_dir.glob(pattern))
+            if video_files:
+                return video_files[0]  # Return first match
+        return None
+
+    def _find_audio_file(self, video_dir: Path) -> Optional[Path]:
+        """Find audio file in the video directory."""
+        if not video_dir.exists():
+            return None
+        
+        audio_extensions = ["*.mp3", "*.wav", "*.m4a", "*.aac"]
+        for pattern in audio_extensions:
+            audio_files = list(video_dir.glob(pattern))
+            if audio_files:
+                return audio_files[0]  # Return first match
+        return None
+
+    def _find_subtitle_file(self, video_dir: Path) -> Optional[Path]:
+        """Find subtitle file in the video directory."""
+        if not video_dir.exists():
+            return None
+        
+        subtitle_extensions = ["*.json3", "*.vtt", "*.srt", "*.ass"]
+        for pattern in subtitle_extensions:
+            subtitle_files = list(video_dir.glob(pattern))
+            if subtitle_files:
+                return subtitle_files[0]  # Return first match
+        return None
+
+    async def extract_from_file(self, file_path: Path) -> DataExtractionResult:
         """
         Extract transcript and timing data from local video file.
 
