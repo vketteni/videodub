@@ -124,7 +124,7 @@ class TranslationPipeline:
 
         try:
             # Step 1: Extract data (transcript + timing)
-            timed_transcript = await self._extract_data(url)
+            timed_transcript, original_video_path = await self._extract_data(url)
             result.metadata = timed_transcript.video_metadata
 
             if not timed_transcript.segments:
@@ -149,7 +149,7 @@ class TranslationPipeline:
 
             # Step 5: Create dubbed video (optional)
             dubbed_video_path = await self._create_dubbed_video(
-                video_id, timed_translation
+                video_id, timed_translation, original_video_path
             )
 
             # Step 6: Save all data to storage
@@ -216,7 +216,7 @@ class TranslationPipeline:
 
         try:
             # Step 1: Extract data once (shared across all strategies)
-            timed_transcript = await self._extract_data(url)
+            timed_transcript, original_video_path = await self._extract_data(url)
 
             if not timed_transcript.segments:
                 error_msg = "No transcript segments available for translation"
@@ -350,12 +350,13 @@ class TranslationPipeline:
 
         return results
 
-    async def _extract_data(self, url: str) -> TimedTranscript:
+    async def _extract_data(self, url: str) -> tuple[TimedTranscript, Optional[Path]]:
         """Extract transcript and timing data from video."""
         try:
             logger.debug("Extracting data from URL", url=url)
             
-            timed_transcript = await self.data_extraction_service.extract_from_url(url)
+            extraction_result = await self.data_extraction_service.extract_from_url(url)
+            timed_transcript = extraction_result.timed_transcript
 
             logger.info(
                 "Data extraction completed",
@@ -364,9 +365,11 @@ class TranslationPipeline:
                 duration=timed_transcript.timing_metadata.total_duration,
                 quality=timed_transcript.extraction_quality,
                 source_type=timed_transcript.source_type.value,
+                video_file=str(extraction_result.video_file_path) if extraction_result.video_file_path else None,
+                audio_file=str(extraction_result.audio_file_path) if extraction_result.audio_file_path else None,
             )
 
-            return timed_transcript
+            return timed_transcript, extraction_result.video_file_path
 
         except Exception as e:
             logger.error("Data extraction failed", url=url, error=str(e))
@@ -527,7 +530,7 @@ class TranslationPipeline:
             raise TTSError(f"Failed to generate audio: {str(e)}")
 
     async def _create_dubbed_video(
-        self, video_id: str, timed_translation: TimedTranslation
+        self, video_id: str, timed_translation: TimedTranslation, original_video_path: Optional[Path] = None
     ) -> Optional[Path]:
         """Create dubbed video by combining original video with translated audio."""
         try:
@@ -543,11 +546,20 @@ class TranslationPipeline:
                 logger.warning(f"Combined audio not found: {combined_audio_path}")
                 return None
 
-            # Find original video file
-            original_video_path = await self._find_original_video(video_id)
+            # Use provided video path or find original video file
+            if not original_video_path:
+                logger.debug("No original video path provided, searching for video file")
+                original_video_path = await self._find_original_video(video_id)
+            
             if not original_video_path:
                 logger.warning("No original video file found")
                 return None
+            
+            if not original_video_path.exists():
+                logger.warning("Original video file does not exist", path=str(original_video_path))
+                return None
+                
+            logger.debug("Using original video file", path=str(original_video_path))
 
             # Create output path for dubbed video
             dubbed_video_path = (
