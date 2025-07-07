@@ -1,7 +1,7 @@
 # ADR 0004: Pipeline Step Evaluation Framework
 
 ## Status
-Proposed
+Superseded by integrated quality assessment approach
 
 ## Context
 The VideoDub pipeline consists of multiple processing steps, each transforming data and affecting final output quality. While automated unit tests verify functional correctness, there's a critical need for **quality evaluation** and **human assessment** of pipeline outputs.
@@ -263,3 +263,24 @@ evaluation/
 
 ## Date
 2025-07-04
+
+## Superseded By
+
+This ADR was partially implemented with a separate evaluation framework (`evaluation/` directory) but was later superseded by an integrated quality assessment approach implemented directly within pipeline services.
+
+### Current Implementation
+
+Instead of a separate evaluation framework, the system now provides:
+
+1. **Built-in Quality Assessment**: Each service (particularly `AlignmentService`) includes integrated quality scoring and evaluation methods
+2. **A/B Testing Support**: Pipeline supports comparing multiple alignment strategies with built-in evaluation
+3. **Integrated Metrics**: Quality scores, timing accuracy, and performance metrics are built into service interfaces
+4. **Comprehensive Testing**: Integration tests provide quality regression detection without separate evaluation infrastructure
+
+### Key Differences
+
+- **Original ADR-0004**: Proposed separate evaluation framework with dedicated datasets, evaluators, and reporting
+- **Implemented Solution**: Embedded quality assessment within services, eliminating the need for separate evaluation infrastructure
+- **Benefits**: Simpler architecture, better maintainability, integrated workflow
+
+The core quality assessment needs identified in this ADR are addressed through the current service-based architecture with integrated evaluation capabilities.

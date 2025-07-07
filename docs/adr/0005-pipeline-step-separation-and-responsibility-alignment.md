@@ -1,7 +1,7 @@
 # ADR 0005: Pipeline Step Separation and Responsibility Alignment
 
 ## Status
-Proposed
+Accepted
 
 ## Context
 The current pipeline architecture conflates multiple responsibilities within the "transcription" step, creating conceptual misalignment and implementation complexity. Specifically:

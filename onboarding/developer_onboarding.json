@@ -1,6 +1,6 @@
 {
   "getting_started": {
-    "description": "Video translation pipeline with clean service architecture - get up and running quickly",
+    "description": "Video translation pipeline with Service architecture - get up and running quickly",
     "project_info": {
       "main_entry_point": "src/videodub/core/pipeline.py",
       "cli_command": "python examples/quick_test.py",
@@ -50,32 +50,18 @@
             "relevance": "Cost monitoring and analytics"
           },
           {
-            "adr": "0004",
-            "title": "Pipeline Step Evaluation Framework",
-            "status": "Proposed",
-            "relevance": "Quality evaluation and human assessment system"
-          },
-          {
             "adr": "0005",
             "title": "Pipeline Step Separation and Responsibility Alignment",
-            "status": "Complete - Implementation Archived",
+            "status": "Accepted",
             "relevance": "Fundamental pipeline architecture - see implementation archive",
             "implementation_archive": "docs/architecture/adr_0005_implementation/"
+          },
+          {
+            "adr": "0006",
+            "title": "Speech Timing Model Redesign",
+            "status": "Proposed",
+            "relevance": "Natural speech timing vs subtitle display timing - fixes overlapping segments"
           }
-        ]
-      },
-      "evaluation_framework": {
-        "location": "evaluation/",
-        "implementation_guide": "evaluation/README.md",
-        "description": "Pipeline step evaluation framework for quality assessment and human review",
-        "status": "Active",
-        "usage": "poetry run python3 evaluation/scripts/run_evaluation.py --help",
-        "key_features": [
-          "Human-readable before/after comparisons",
-          "Configuration A/B testing",
-          "Quality scoring and metrics",
-          "Automated report generation",
-          "Real service integration"
         ]
       },
       "testing_strategy": {
@@ -90,8 +76,8 @@
       }
     },
     "current_architecture": {
-      "status": "Service-Based Architecture - ADR-0005 Complete",
-      "description": "Clean service-based architecture with separated responsibilities",
+      "status": "Service-Based Architecture - ADR-0005 Accepted",
+      "description": "Service-based architecture with separated responsibilities",
       "implementation_history": {
         "archive_location": "docs/architecture/adr_0005_implementation/",
         "description": "Complete 6-phase implementation history archived for reference",
@@ -100,73 +86,35 @@
       "architecture_evolution": {
         "legacy_pipeline": "video → transcription → translation → tts → audio → video",
         "current_pipeline": "video → data_extraction → translation → alignment → tts → audio → video",
-        "key_improvement": "Clean separation between data extraction, translation, and timing alignment"
+        "key_improvement": "Separation between data extraction, translation, and timing alignment"
       }
     },
-    "flow": [
+    "pipeline_services": [
       {
-        "step": 1,
         "name": "Data Extraction",
         "component": "DataExtractionService",
         "file_path": "src/videodub/services/data_extraction.py",
         "implementation": "YouTubeDataExtractionService",
         "input": ["Video URL"],
-        "output": ["TimedTranscript"],
-        "description": "Extracts transcript and timing metadata from video sources (YouTube API, future: speech-to-text)",
-        "status": "Implemented - Phase 1 Complete",
-        "responsibility": "Extract all available data from video sources",
-        "models": ["TimedTranscript", "TimingMetadata", "SourceType", "TranscriptSegment", "VideoMetadata"],
-        "interface_methods": ["extract_from_url()", "extract_from_file()", "supports_source()"],
-        "features": [
-          "YouTube API integration",
-          "Quality scoring and timing accuracy analysis", 
-          "Source type detection",
-          "Comprehensive validation",
-          "Future: speech-to-text for raw video"
-        ]
+        "output": ["DataExtractionResult (TimedTranscript + file paths)"],
+        "description": "Extracts transcript, timing metadata, and file paths from video sources (YouTube API, future: speech-to-text)",
+        "status": "Production Ready",
+        "responsibility": "Extract all available data and provide explicit file paths for robust pipeline processing",
+        "key_capabilities": ["YouTube API integration", "File path tracking", "Quality scoring", "Future: speech-to-text"]
       },
       {
-        "step": 2,
         "name": "Translation",
         "component": "TranslationService", 
         "file_path": "src/videodub/services/translator.py",
         "implementation": "OpenAITranslationService",
-        "optimized_implementation": {
-          "name": "OptimizedOpenAITranslationService",
-          "file_path": "src/videodub/services/optimized_translator.py",
-          "performance_improvements": "90% faster via batch processing",
-          "use_case": "Large batch processing and production workloads"
-        },
         "input": ["List[str] (extracted from TimedTranscript.segments)"],
         "output": ["List[str] (translated texts)"],
         "description": "Pure text-to-text translation using OpenAI GPT models",
-        "status": "Implemented - Phase 2 Complete, Optimized - Phase 4 Complete",
+        "status": "Production Ready",
         "responsibility": "Pure text translation with no timing or alignment concerns",
-        "models_supported": ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4.1-nano"],
-        "interface_methods": ["translate_text()", "translate_batch()"],
-        "implementations": {
-          "standard": {
-            "class": "OpenAITranslationService",
-            "use_case": "Small batches, single translations, development",
-            "characteristics": "Individual API calls, simpler implementation"
-          },
-          "optimized": {
-            "class": "OptimizedOpenAITranslationService", 
-            "use_case": "Large batches, production workloads, performance-critical",
-            "characteristics": "Batch API calls, 90% performance improvement, configurable batch sizes"
-          }
-        },
-        "features": [
-          "Clean text input/output",
-          "Concurrent batch processing", 
-          "Error handling with fallbacks",
-          "Language validation",
-          "Focus solely on translation quality",
-          "Performance-optimized variant available"
-        ]
+        "key_capabilities": ["Pure text translation", "Batch processing", "Optimized variant available"]
       },
       {
-        "step": 3,
         "name": "Alignment",
         "component": "AlignmentService",
         "file_path": "src/videodub/services/alignment.py", 
@@ -174,24 +122,11 @@
         "input": ["TimedTranscript", "List[str] (translated texts)", "target_language", "AlignmentConfig"],
         "output": ["TimedTranslation"],
         "description": "Synchronizes translated text with original speech timing metadata using configurable alignment strategies",
-        "status": "Implemented - Phase 3 Complete",
+        "status": "Production Ready",
         "responsibility": "Synchronize translated text with original timing, handle segment length mismatches, apply speech timing optimization",
-        "alignment_strategies": ["LENGTH_BASED", "SENTENCE_BOUNDARY", "SEMANTIC_SIMILARITY", "HYBRID", "DYNAMIC_PROGRAMMING"],
-        "supported_strategies": ["LENGTH_BASED", "SENTENCE_BOUNDARY", "HYBRID"],
-        "models": ["TimedTranslation", "TimedTranslationSegment", "AlignmentConfig", "AlignmentEvaluation", "AlignmentStrategy"],
-        "interface_methods": ["align_translation()", "evaluate_alignment()", "compare_alignments()", "get_supported_strategies()"],
-        "features": [
-          "Multiple alignment strategies with A/B testing",
-          "Quality scoring: timing_accuracy, text_preservation, boundary_alignment",
-          "Confidence scoring per segment",
-          "Execution time tracking",
-          "Configurable strategy parameters",
-          "Timing preservation and adjustment logic",
-          "Comprehensive evaluation framework integration"
-        ]
+        "key_capabilities": ["Multiple alignment strategies", "A/B testing", "Quality scoring", "Built-in evaluation"]
       },
       {
-        "step": 4,
         "name": "Text-to-Speech",
         "component": "TTSService",
         "file_path": "src/videodub/services/tts.py",
@@ -199,26 +134,11 @@
         "input": ["TimedTranslation", "target_language"],
         "output": ["AudioFiles"],
         "description": "Generates natural-sounding audio from aligned translated segments using OpenAI TTS or other engines",
-        "status": "Active - Integrated with new models",
+        "status": "Production Ready",
         "responsibility": "Convert aligned translated text to speech audio files",
-        "engines_supported": ["OpenAI", "Google", "Azure", "System"],
-        "interface_methods": ["generate_audio()", "generate_batch_audio()", "get_supported_languages()", "get_supported_voices()"],
-        "optimization_helpers": {
-          "name": "ConcurrentTTSOptimizer",
-          "file_path": "src/videodub/services/optimized_translator.py",
-          "performance_improvements": "2.4x speedup via concurrent generation",
-          "use_case": "Large audio batch generation"
-        },
-        "features": [
-          "Support for TimedTranslation input",
-          "Batch audio generation",
-          "Multiple TTS engine support",
-          "Voice selection and language support",
-          "Concurrent optimization available (2.4x speedup)"
-        ]
+        "key_capabilities": ["Multiple TTS engines", "Batch generation", "Concurrent optimization available"]
       },
       {
-        "step": 5,
         "name": "Audio Processing",
         "component": "AudioProcessingService",
         "file_path": "src/videodub/services/audio.py",
@@ -226,17 +146,11 @@
         "input": ["AudioFiles", "TimedTranslation"],
         "output": ["CombinedAudioFile"], 
         "description": "Combines individual audio segments into a single synchronized audio track",
-        "status": "Active - Enhanced for new timing models",
+        "status": "Stable",
         "responsibility": "Synchronize and combine translated audio segments",
-        "interface_methods": ["combine_audio_segments()", "adjust_audio_timing()"],
-        "features": [
-          "Timing-aware audio combination",
-          "Audio synchronization with TimedTranslation",
-          "FFmpeg-based processing"
-        ]
+        "key_capabilities": ["Audio synchronization", "FFmpeg-based processing"]
       },
       {
-        "step": 6,
         "name": "Video Dubbing",
         "component": "VideoProcessingService",
         "file_path": "src/videodub/services/video.py",
@@ -244,18 +158,11 @@
         "input": ["OriginalVideo", "CombinedAudioFile"],
         "output": ["DubbedVideo"],
         "description": "Creates final dubbed video by replacing original audio with translated audio using FFmpeg",
-        "status": "Active",
+        "status": "Production Ready",
         "responsibility": "Combine original video with translated audio track",
-        "dependencies": ["ffmpeg"],
-        "interface_methods": ["create_dubbed_video()", "extract_video_metadata()"],
-        "features": [
-          "Video-audio synchronization",
-          "Multiple video format support",
-          "Quality preservation"
-        ]
+        "key_capabilities": ["Video-audio synchronization", "Multiple format support"]
       },
       {
-        "step": 7,
         "name": "Storage & Result",
         "component": "StorageService",
         "file_path": "src/videodub/services/storage.py",
@@ -263,130 +170,27 @@
         "input": ["VideoMetadata", "TimedTranscript", "TimedTranslation", "AudioFiles", "DubbedVideo"],
         "output": ["ProcessingResult"],
         "description": "Saves all pipeline outputs and generates processing result with file paths",
-        "status": "Enhanced - Phase 3 Complete",
+        "status": "Production Ready",
         "responsibility": "Persist all pipeline data and generate comprehensive processing results",
-        "enhanced_methods": [
-          "save_timed_transcript()", 
-          "save_timed_translation()", 
-          "load_timed_transcript()", 
-          "load_timed_translation()",
-          "save_metadata()",
-          "save_processing_result()"
-        ],
-        "features": [
-          "Support for new alignment models",
-          "Alignment evaluation storage", 
-          "A/B testing result comparison",
-          "Comprehensive file management",
-          "Processing result generation"
-        ]
+        "key_capabilities": ["Data persistence", "Result generation", "A/B testing storage"]
       }
     ],
-    "quick_reference": {
-      "basic_usage": {
-        "description": "Get started with a basic video translation",
-        "example_location": "examples/basic_usage.py",
-        "quick_test": "python examples/quick_test.py"
-      },
-      "common_tasks": [
-        {
-          "task": "Process a YouTube video",
-          "example": "See examples/basic_usage.py",
-          "key_services": ["DataExtractionService", "TranslationService", "AlignmentService"]
-        },
-        {
-          "task": "Compare alignment strategies",
-          "example": "Use process_video_with_alignment_comparison()",
-          "key_services": ["AlignmentService with A/B testing"]
-        },
-        {
-          "task": "Optimize for performance",
-          "example": "Use OptimizedOpenAITranslationService",
-          "key_services": ["OptimizedTranslationService", "ConcurrentTTSOptimizer"]
-        }
-      ]
-    },
-    "pipeline_architecture": {
-      "description": "Service-based pipeline with clean separation of concerns",
-      "main_pipeline": {
-        "name": "TranslationPipeline",
-        "file_path": "src/videodub/core/pipeline.py",
-        "status": "Production Ready",
-        "description": "Pipeline orchestrator with AlignmentService integration and A/B testing support",
-        "architecture": "video → data_extraction → translation → alignment → tts → audio → video",
-        "key_methods": {
-          "process_video()": "Standard video processing with single alignment strategy",
-          "process_video_with_alignment_comparison()": "A/B testing with multiple alignment strategies for evaluation"
-        },
-        "services_orchestrated": [
-          "DataExtractionService",
-          "TranslationService", 
-          "AlignmentService",
-          "TTSService",
-          "AudioProcessingService",
-          "VideoProcessingService",
-          "StorageService"
-        ],
-        "key_features": [
-          "Clean service separation and dependency injection",
-          "A/B testing with multiple alignment strategies",
-          "Comprehensive error handling and logging",
-          "Quality metrics and performance tracking",
-          "Integration with cost tracking",
-          "Alignment evaluation and comparison reports"
-        ],
-        "input": ["Video URL", "AlignmentConfig (optional)"],
-        "output": ["ProcessingResult with alignment evaluation"]
-      }
-    },
     "performance_optimizations": {
-      "description": "Production-ready performance optimizations available alongside standard implementations",
-      "available_optimizations": [
-        {
-          "service": "Translation",
-          "standard": {
-            "class": "OpenAITranslationService",
-            "file": "src/videodub/services/translator.py",
-            "best_for": "Development, small batches, simple use cases"
-          },
-          "optimized": {
-            "class": "OptimizedOpenAITranslationService", 
-            "file": "src/videodub/services/optimized_translator.py",
-            "best_for": "Production, large batches, performance-critical workloads",
-            "improvements": "90% performance improvement, 90% fewer API calls"
-          }
-        },
-        {
-          "service": "TTS",
-          "standard": "Standard TTSService implementations",
-          "optimization_helper": {
-            "class": "ConcurrentTTSOptimizer",
-            "file": "src/videodub/services/optimized_translator.py", 
-            "best_for": "Large audio file generation",
-            "improvements": "2.4x speedup via controlled concurrency"
-          }
-        }
-      ],
-      "usage_guidance": {
-        "development": "Use standard implementations for development and testing",
-        "production": "Use optimized implementations for production workloads",
-        "performance_testing": "See docs/performance_analysis_phase4.md for detailed benchmarks"
-      }
+      "description": "Optimized variants available for production workloads",
+      "translation": "OptimizedOpenAITranslationService (90% faster, src/videodub/services/optimized_translator.py)",
+      "tts": "ConcurrentTTSOptimizer (2.4x speedup, src/videodub/services/optimized_translator.py)"
     },
-    "side_processes": [
-      {
-        "name": "Cost Tracking & Analytics",
-        "file_path": "src/videodub/utils/cost_tracking.py",
-        "implementation": "CostTracker",
-        "triggered_after": "Translation",
-        "monitored_steps": [
-          "Translation API calls (OpenAI GPT)",
-          "Text-to-Speech API calls",
-          "Token usage tracking",
-          "Character usage tracking",
-          "Real-time cost calculation"
-        ]
+    "cost_tracking": {
+      "file_path": "src/videodub/utils/cost_tracking.py",
+      "description": "Real-time API cost monitoring for translation and TTS calls"
+    },
+    "planned_enhancements": {
+      "speech_timing_redesign": {
+        "adr": "ADR-0006", 
+        "description": "Replace YouTube subtitle timing with natural speech duration estimation",
+        "problem": "Current overlapping segments (4+ simultaneous) make alignment difficult",
+        "affects": ["DataExtractionService", "AlignmentService", "AudioProcessingService"]
       }
-    ]
+    }
   }
 }
