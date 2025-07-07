@@ -61,7 +61,7 @@ from videodub.core.models import PipelineConfig
 output_path = Path("./my_translations")
 output_path.mkdir(parents=True, exist_ok=True)
 
-# Create pipeline with modern architecture
+# Create pipeline with service-based architecture
 pipeline = TranslationPipeline(
     data_extraction_service=YouTubeDataExtractionService(output_dir=output_path),
     translation_service=OpenAITranslationService(

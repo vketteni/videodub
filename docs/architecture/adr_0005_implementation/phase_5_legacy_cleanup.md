@@ -4,7 +4,7 @@
 Complete
 
 ## Overview
-Comprehensive cleanup of legacy components, models, and interfaces to eliminate technical debt and complete the transition to the modern architecture.
+Comprehensive cleanup of legacy components, models, and interfaces to eliminate technical debt and complete the transition to the new architecture.
 
 ## Key Deliverables
 

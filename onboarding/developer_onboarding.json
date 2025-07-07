@@ -1,6 +1,6 @@
 {
   "getting_started": {
-    "description": "Modern video translation pipeline with clean service architecture - get up and running quickly",
+    "description": "Video translation pipeline with clean service architecture - get up and running quickly",
     "project_info": {
       "main_entry_point": "src/videodub/core/pipeline.py",
       "cli_command": "python examples/quick_test.py",
@@ -90,16 +90,16 @@
       }
     },
     "current_architecture": {
-      "status": "Modern Service-Based Architecture - ADR-0005 Complete",
+      "status": "Service-Based Architecture - ADR-0005 Complete",
       "description": "Clean service-based architecture with separated responsibilities",
       "implementation_history": {
         "archive_location": "docs/architecture/adr_0005_implementation/",
         "description": "Complete 6-phase implementation history archived for reference",
-        "status": "All phases complete - system fully migrated to modern architecture"
+        "status": "All phases complete - system fully migrated to service-based architecture"
       },
       "architecture_evolution": {
         "legacy_pipeline": "video → transcription → translation → tts → audio → video",
-        "modern_pipeline": "video → data_extraction → translation → alignment → tts → audio → video",
+        "current_pipeline": "video → data_extraction → translation → alignment → tts → audio → video",
         "key_improvement": "Clean separation between data extraction, translation, and timing alignment"
       }
     },
@@ -307,12 +307,12 @@
       ]
     },
     "pipeline_architecture": {
-      "description": "Modern service-based pipeline with clean separation of concerns",
+      "description": "Service-based pipeline with clean separation of concerns",
       "main_pipeline": {
         "name": "TranslationPipeline",
         "file_path": "src/videodub/core/pipeline.py",
         "status": "Production Ready",
-        "description": "Modern pipeline orchestrator with AlignmentService integration and A/B testing support",
+        "description": "Pipeline orchestrator with AlignmentService integration and A/B testing support",
         "architecture": "video → data_extraction → translation → alignment → tts → audio → video",
         "key_methods": {
           "process_video()": "Standard video processing with single alignment strategy",

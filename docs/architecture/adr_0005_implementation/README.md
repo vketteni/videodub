@@ -8,7 +8,7 @@ This directory contains the complete implementation history of **ADR-0005: Pipel
 
 **Status**: Complete - All Phases Implemented  
 **Duration**: 6 phases  
-**Outcome**: Successfully migrated from legacy pipeline architecture to modern service-based architecture
+**Outcome**: Successfully migrated from legacy pipeline architecture to service-based architecture
 
 ## Architecture Evolution
 
@@ -17,7 +17,7 @@ This directory contains the complete implementation history of **ADR-0005: Pipel
 video → transcription → translation → tts → audio → video
 ```
 
-### After ADR-0005 (Modern)
+### After ADR-0005
 ```
 video → data_extraction → translation → alignment → tts → audio → video
 ```
@@ -58,13 +58,13 @@ video → data_extraction → translation → alignment → tts → audio → vi
    - Status: Complete
 
 6. **[Phase 6: Migration](./phase_6_migration.md)**
-   - Final migration to modern architecture
+   - Final migration to new architecture
    - Updated examples and documentation
    - Status: Complete
 
 ## Current Architecture
 
-The implementation resulted in a modern, service-based architecture with:
+The implementation resulted in a service-based architecture with:
 
 - **7 Pipeline Steps**: Data Extraction → Translation → Alignment → TTS → Audio Processing → Video Dubbing → Storage
 - **Clean Interfaces**: Well-defined service boundaries

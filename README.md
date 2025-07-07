@@ -5,7 +5,7 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 ### Core Components
 
 #### 1. **Core Pipeline (`src/videodub/core/`)**
-- **`pipeline.py`** - Modern pipeline orchestrator with alignment service integration
+- **`pipeline.py`** - Pipeline orchestrator with alignment service integration
 - **`models.py`** - Comprehensive data models with timing and alignment support
 - **`interfaces.py`** - Service interfaces and contracts
 - **`exceptions.py`** - Comprehensive error handling
@@ -42,13 +42,13 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 - Quality optimization through complete sentence processing
 
 #### 7. **Video Processing Engine (`src/videodub/services/video.py`)**
-- **NEW**: FFmpeg-based video dubbing with audio replacement
+- FFmpeg-based video dubbing with audio replacement
 - Lossless video quality preservation during audio track replacement
 - Complete video metadata extraction (duration, resolution, codecs)
 - Graceful fallback handling for video processing errors
 
 #### 8. **Cost Tracking & Analytics (`src/videodub/utils/cost_tracking.py`)**
-- **NEW**: Real-time API usage tracking
+- Real-time API usage tracking
 - Accurate cost calculation with current pricing models
 - Token and character usage analytics
 - Session-based cost summaries and breakdowns
@@ -56,11 +56,12 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 ### Utility Scripts & Examples
 
 #### 8. **Testing & Development (`examples/`)**
+##### TODO: MAKE CONCISE
 - **`basic_usage.py`** - Comprehensive usage examples
   - Demonstrates different pipeline configurations
   - Shows single video and batch processing
   - Multi-language translation examples
-- **`quick_test.py`** - NEW: Economic testing and model comparison
+- **`quick_test.py`** - Economic testing and model comparison
   - Fast single video testing with cost analysis
   - Multi-model comparison (GPT-3.5, GPT-4, GPT-4.1-nano)
   - Real-time cost tracking and performance metrics
@@ -73,74 +74,13 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 ## Pipeline Architecture
 
 ### Pipeline Workflow
+#### TODO: CREATE
 ```mermaid
-flowchart TD
-    A[Video URL] --> B[DataExtractionService]
-    B --> C[TimedTranscript]
-    C --> D[TranslationService] 
-    D --> E[List of Translated Texts]
-    C --> F[AlignmentService]
-    E --> F
-    F --> G[TimedTranslation]
-    G --> H[TTSService]
-    H --> I[AudioFiles]
-    I --> J[AudioProcessingService]
-    J --> K[VideoProcessingService]
-    K --> L[StorageService]
-    L --> M[ProcessingResult]
-    
-    %% Side processes
-    D -.-> N[CostTracker]
-    F -.-> O[AlignmentEvaluation]
-    F -.-> K
-    K --> L[Cost Analytics]
-    
-    %% Error states
-    D -.-> M[⚠️ Needs Reimplementation]
-    
-    %% Dependencies
-    B -.-> N[video_scraper pkg]
-    H -.-> O[FFmpeg]
-    
-    style D fill:#ffcccc
-    style M fill:#ff9999
-    style K fill:#ccffcc
 ```
 
 ### Service Dependencies
+#### TODO: CREATE
 ```mermaid
-graph TB
-    subgraph "Core Pipeline"
-        P[TranslationPipeline]
-        P --> VS[VideoScrapingService]
-        P --> TPS[TranscriptProcessingService]
-        P --> TS[TranslationService]
-        P --> TTS[TTSService]
-        P --> APS[AudioProcessingService]
-        P --> VPS[VideoProcessingService]
-        P --> SS[StorageService]
-    end
-    
-    subgraph "External Dependencies"
-        OAI[OpenAI API]
-        FF[FFmpeg]
-        VSCRAPER[video_scraper]
-    end
-    
-    subgraph "Utilities"
-        CT[CostTracker]
-        LOG[Logging]
-        CFG[Configuration]
-    end
-    
-    TS --> OAI
-    TTS --> OAI
-    VPS --> FF
-    VS --> VSCRAPER
-    TS --> CT
-    TTS --> CT
-    P --> CFG
-    P --> LOG
 ```
 
 ## Supported Features
