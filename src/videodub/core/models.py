@@ -122,6 +122,14 @@ class TimedTranscript:
             )
 
 
+@dataclass
+class DataExtractionResult:
+    """Result from data extraction containing transcript and file paths."""
+    
+    timed_transcript: TimedTranscript
+    video_file_path: Optional[Path] = None
+    audio_file_path: Optional[Path] = None
+    subtitle_file_path: Optional[Path] = None
 
 
 @dataclass

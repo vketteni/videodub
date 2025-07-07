@@ -31,6 +31,7 @@ from .core.exceptions import (
 
 # Core imports
 from .core.models import (
+    DataExtractionResult,
     PipelineConfig,
     ProcessingResult,
     ProcessingStatus,
@@ -60,6 +61,7 @@ from .utils.logging import configure_logging, get_logger, setup_pipeline_logging
 # Convenience exports
 __all__ = [
     # Core models
+    "DataExtractionResult",
     "VideoMetadata",
     "TranscriptSegment",
     "TranslationSegment",

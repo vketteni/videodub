@@ -8,6 +8,7 @@ from .models import (
     AlignmentConfig,
     AlignmentEvaluation,
     AlignmentStrategy,
+    DataExtractionResult,
     ProcessingResult,
     SourceType,
     TimedTranscript,
@@ -23,7 +24,7 @@ class DataExtractionService(ABC):
     """Abstract interface for data extraction services."""
 
     @abstractmethod
-    async def extract_from_url(self, url: str) -> TimedTranscript:
+    async def extract_from_url(self, url: str) -> DataExtractionResult:
         """
         Extract transcript and timing data from video URL.
 
@@ -31,7 +32,7 @@ class DataExtractionService(ABC):
             url: Video URL to extract from
 
         Returns:
-            TimedTranscript with extracted data
+            DataExtractionResult with extracted data and file paths
 
         Raises:
             DataExtractionError: If extraction fails
@@ -39,7 +40,7 @@ class DataExtractionService(ABC):
         pass
 
     @abstractmethod
-    async def extract_from_file(self, file_path: Path) -> TimedTranscript:
+    async def extract_from_file(self, file_path: Path) -> DataExtractionResult:
         """
         Extract transcript and timing data from local video file.
 
@@ -47,7 +48,7 @@ class DataExtractionService(ABC):
             file_path: Path to video file
 
         Returns:
-            TimedTranscript with extracted data
+            DataExtractionResult with extracted data and file paths
 
         Raises:
             DataExtractionError: If extraction fails
