@@ -34,6 +34,7 @@ ENV/
 
 # Pipeline output
 pipeline_output/
+quick_test_output/
 
 # Logs
 *.log
