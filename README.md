@@ -1,6 +1,29 @@
 # VideoDub - AI Video Translation Pipeline
 
 A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages using advanced sentence reconstruction, generates natural-sounding audio in the target language with AI-powered text-to-speech services, and creates fully dubbed videos with real-time cost tracking.
+## Supported Features
+
+### 🌍 **Languages**
+Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese, Russian, Arabic, Hindi
+
+### 🤖 **Translation Models**
+- **GPT-4.1-nano** - Latest, most cost-effective (recommended)
+- **GPT-4-turbo** - High performance, balanced cost
+- **GPT-4** - Premium quality, highest cost
+- **GPT-3.5-turbo** - Fast, economical baseline
+
+### 📹 **Video Sources**
+YouTube and 1000+ platforms via yt-dlp integration
+
+## Dependencies
+
+The project relies on several key external services and packages:
+
+- **video-scraper**: External package for video downloading
+- **OpenAI API**: Translation and high-quality TTS
+- **yt-dlp**: Underlying video extraction technology
+- **ffmpeg**: Audio processing, manipulation, and video dubbing
+
 
 ### Core Components
 
@@ -83,25 +106,3 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 ```mermaid
 ```
 
-## Supported Features
-
-### 🌍 **Languages**
-Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese, Russian, Arabic, Hindi
-
-### 🤖 **Translation Models**
-- **GPT-4.1-nano** - Latest, most cost-effective (recommended)
-- **GPT-4-turbo** - High performance, balanced cost
-- **GPT-4** - Premium quality, highest cost
-- **GPT-3.5-turbo** - Fast, economical baseline
-
-### 📹 **Video Sources**
-YouTube and 1000+ platforms via yt-dlp integration
-
-## Dependencies
-
-The project relies on several key external services and packages:
-
-- **video-scraper**: External package for video downloading
-- **OpenAI API**: Translation and high-quality TTS
-- **yt-dlp**: Underlying video extraction technology
-- **ffmpeg**: Audio processing, manipulation, and video dubbing
