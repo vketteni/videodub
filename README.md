@@ -4,7 +4,7 @@ A comprehensive Python pipeline that downloads YouTube videos, translates their 
 ## Supported Features
 
 ### 🌍 **Languages**
-Spanish, French, German, Italian, Portuguese, Japanese, Korean, Chinese, Russian, Arabic, Hindi
+Spanish, French, German, Italian, Portuguese
 
 ### 🤖 **Translation Models**
 - **GPT-4.1-nano** - Latest, most cost-effective (recommended)
