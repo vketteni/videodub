@@ -1,6 +1,6 @@
 # VideoDub - AI Video Translation Pipeline
 
-A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages using advanced sentence reconstruction, generates natural-sounding audio in the target language with AI-powered text-to-speech services, and creates fully dubbed videos with real-time cost tracking.
+A comprehensive Python pipeline that downloads YouTube videos, translates their transcripts to different languages, generates natural-sounding audio in the target language with AI-powered text-to-speech services, and creates fully dubbed videos with real-time cost tracking.
 ## Supported Features
 
 ### 🌍 **Languages**
