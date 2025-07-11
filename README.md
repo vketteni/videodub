@@ -15,6 +15,33 @@ Spanish, French, German, Italian, Portuguese
 ### 📹 **Video Sources**
 YouTube and 1000+ platforms via yt-dlp integration
 
+## Quick Start
+
+### 🐳 Docker Setup (Recommended)
+```bash
+# One-command setup with all dependencies
+make docker-quick-setup
+
+# Connect to development container
+docker compose exec videodub-dev bash
+
+# Run quick test
+make docker-quick-test
+```
+
+### 🐍 Local Setup
+```bash
+# Install system dependencies
+sudo apt-get install ffmpeg
+pip install yt-dlp
+
+# Install Python dependencies
+poetry install
+
+# Run quick test
+poetry run python examples/quick_test.py
+```
+
 ## Dependencies
 
 The project relies on several key external services and packages:
@@ -23,6 +50,12 @@ The project relies on several key external services and packages:
 - **OpenAI API**: Translation and high-quality TTS
 - **yt-dlp**: Underlying video extraction technology
 - **ffmpeg**: Audio processing, manipulation, and video dubbing
+
+### Docker Benefits
+- ✅ **Unified Dependencies**: All system and Python deps in one container
+- ✅ **Consistent Environment**: Same setup across development/production
+- ✅ **Isolated**: No conflicts with host system
+- ✅ **Easy Cleanup**: `make docker-clean`
 
 
 ### Core Components

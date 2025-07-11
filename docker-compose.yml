@@ -1,0 +1,91 @@
+
+services:
+  # Main application service
+  videodub:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: videodub:latest
+    container_name: videodub-app
+    volumes:
+      # Mount source code for development
+      - .:/app
+      # Persistent output directory
+      - ./output:/app/output
+      # Cache directory for faster rebuilds
+      - videodub-cache:/tmp
+    environment:
+      # API Keys (set in .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+      - AZURE_SPEECH_KEY=${AZURE_SPEECH_KEY}
+      # Application settings
+      - PYTHONPATH=/app/src
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+    # Keep container running for development
+    tty: true
+    stdin_open: true
+    command: tail -f /dev/null
+    
+  # Development service with hot reload
+  videodub-dev:
+    extends: videodub
+    container_name: videodub-dev
+    volumes:
+      - .:/app
+      - ./output:/app/output
+      - videodub-cache:/tmp
+      # Mount poetry cache for faster installs
+      - poetry-cache:/root/.cache/pypoetry
+    environment:
+      - PYTHONPATH=/app/src
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=DEBUG
+    command: >
+      bash -c "
+        poetry install &&
+        tail -f /dev/null
+      "
+    profiles:
+      - dev
+      
+  # Testing service
+  videodub-test:
+    extends: videodub
+    container_name: videodub-test
+    environment:
+      - PYTHONPATH=/app/src
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=DEBUG
+    command: >
+      bash -c "
+        poetry install &&
+        make test
+      "
+    profiles:
+      - test
+      
+  # Production service
+  videodub-prod:
+    extends: videodub
+    container_name: videodub-prod
+    environment:
+      - PYTHONPATH=/app/src
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=WARNING
+    restart: unless-stopped
+    profiles:
+      - prod
+
+volumes:
+  videodub-cache:
+    driver: local
+  poetry-cache:
+    driver: local
+
+networks:
+  default:
+    name: videodub-network

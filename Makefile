@@ -104,12 +104,55 @@ clean-all: clean clean-output
 docs:
 	@echo "Documentation generation not yet implemented"
 
-# Docker (for future use)
+# Docker Commands
 docker-build:
-	docker build -t videodub .
+	docker compose build
+
+docker-setup: docker-build
+	@echo "🐳 Setting up Docker environment..."
+	@if [ ! -f .env ]; then \
+		echo "📋 Creating .env from .env.example..."; \
+		cp .env.example .env; \
+		echo "⚠️  Please edit .env with your API keys"; \
+	fi
+	@echo "✅ Docker setup complete"
+
+docker-dev:
+	docker compose --profile dev up -d videodub-dev
+	@echo "🚀 Development container started"
+	@echo "💡 Run: docker compose exec videodub-dev bash"
+
+docker-test:
+	docker compose --profile test up videodub-test
+
+docker-prod:
+	docker compose --profile prod up -d videodub-prod
 
 docker-run:
-	docker run -it --rm videodub
+	docker compose run --rm videodub
+
+docker-shell:
+	docker compose exec videodub bash
+
+docker-logs:
+	docker compose logs -f
+
+docker-down:
+	docker compose down
+
+docker-clean:
+	docker compose down -v --remove-orphans
+	docker system prune -f
+
+docker-rebuild: docker-clean docker-build
+
+# Quick Docker workflows
+docker-quick-test: docker-build
+	docker compose run --rm videodub python examples/quick_test.py
+
+docker-quick-setup: docker-setup docker-dev
+	@echo "🎉 Quick Docker setup complete!"
+	@echo "🔗 Connect: docker compose exec videodub-dev bash"
 
 # Environment setup
 env-create:
