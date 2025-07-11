@@ -72,21 +72,145 @@ class TimingMetadata:
 
 
 @dataclass
+class SpeechSegment:
+    """Natural speech with timing - fundamental audio unit.
+    
+    Represents a segment of speech with precise millisecond timing.
+    estimated_duration_ms is None until completed by AlignmentService.
+    """
+
+    start_time_ms: int
+    estimated_duration_ms: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        """Validate speech segment data."""
+        if self.start_time_ms < 0:
+            raise ValueError("Start time cannot be negative")
+        if self.estimated_duration_ms is not None and self.estimated_duration_ms <= 0:
+            raise ValueError("Estimated duration must be positive")
+
+    @property
+    def end_time_ms(self) -> Optional[int]:
+        """Get end time in milliseconds if duration is available."""
+        if self.estimated_duration_ms is not None:
+            return self.start_time_ms + self.estimated_duration_ms
+        return None
+
+    @property
+    def has_complete_timing(self) -> bool:
+        """Check if speech segment has complete timing information."""
+        return self.estimated_duration_ms is not None
+
+    @property
+    def start_time_seconds(self) -> float:
+        """Get start time in seconds for compatibility."""
+        return self.start_time_ms / 1000.0
+
+    @property
+    def duration_seconds(self) -> Optional[float]:
+        """Get duration in seconds if available."""
+        if self.estimated_duration_ms is not None:
+            return self.estimated_duration_ms / 1000.0
+        return None
+
+
+@dataclass
+class TextContent:
+    """Text content - original or translated.
+    
+    Pure text representation with no timing assumptions.
+    """
+
+    text: str
+    language: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        """Validate text content."""
+        if not self.text.strip():
+            raise ValueError("Text cannot be empty")
+
+    @property
+    def word_count(self) -> int:
+        """Get word count for the text."""
+        return len(self.text.split())
+
+    @property
+    def character_count(self) -> int:
+        """Get character count for the text."""
+        return len(self.text)
+
+
+@dataclass
+class SpeechTextPair:
+    """The relationship between speech and text.
+    
+    Represents the fundamental unit of the video dubbing pipeline:
+    speech timing + text content + their relationship.
+    """
+
+    speech: SpeechSegment
+    original_text: TextContent
+    translated_text: Optional[TextContent] = None
+    subtitle_display_duration_ms: Optional[int] = None  # Preserved YouTube metadata
+
+    def __post_init__(self) -> None:
+        """Validate speech-text pair."""
+        if self.subtitle_display_duration_ms is not None and self.subtitle_display_duration_ms <= 0:
+            raise ValueError("Subtitle display duration must be positive")
+
+    @property
+    def has_translation(self) -> bool:
+        """Check if this pair has translated text."""
+        return self.translated_text is not None
+
+    @property
+    def has_complete_timing(self) -> bool:
+        """Check if speech timing is complete."""
+        return self.speech.has_complete_timing
+
+    @property
+    def target_language(self) -> Optional[str]:
+        """Get target language if translation exists."""
+        if self.translated_text:
+            return self.translated_text.language
+        return None
+
+
+@dataclass
 class TranscriptSegment:
-    """A segment of transcript with timing information."""
+    """A segment of transcript with timing information.
+    
+    DEPRECATED: Use SpeechTextPair instead.
+    This model will be removed in Phase 2 of the integrated redesign.
+    """
 
     start_time: float
-    end_time: float
     text: str
+    end_time: Optional[float] = None
+    subtitle_display_duration: Optional[float] = None
 
     def __post_init__(self) -> None:
         """Validate segment data."""
         if self.start_time < 0:
             raise ValueError("Start time cannot be negative")
-        if self.end_time <= self.start_time:
-            raise ValueError("End time must be greater than start time")
         if not self.text.strip():
             raise ValueError("Text cannot be empty")
+        if self.end_time is not None and self.end_time <= self.start_time:
+            raise ValueError("End time must be greater than start time")
+        if self.subtitle_display_duration is not None and self.subtitle_display_duration <= 0:
+            raise ValueError("Subtitle display duration must be positive")
+
+    @property
+    def duration(self) -> Optional[float]:
+        """Get segment duration in seconds if end_time is available."""
+        if self.end_time is not None:
+            return self.end_time - self.start_time
+        return None
+
+    @property
+    def has_complete_timing(self) -> bool:
+        """Check if segment has complete timing information."""
+        return self.end_time is not None
 
 
 @dataclass
@@ -134,9 +258,13 @@ class DataExtractionResult:
 
 @dataclass
 class TranslationSegment:
-    """A translated segment with audio generation info."""
+    """A translated segment with audio generation info.
+    
+    DEPRECATED: Use SpeechTextPair instead.
+    This model will be removed in Phase 2 of the integrated redesign.
+    """
 
-    original_segment: TranscriptSegment
+    original_segment: "TranscriptSegment"  # Forward reference for transition
     translated_text: str
     audio_path: Optional[Path] = None
     language: Optional[str] = None
@@ -279,7 +407,11 @@ class AlignmentEvaluation:
 
 @dataclass
 class TimedTranslationSegment:
-    """A translated segment with preserved timing information."""
+    """A translated segment with preserved timing information.
+    
+    DEPRECATED: Use SpeechTextPair instead.
+    This model will be removed in Phase 2 of the integrated redesign.
+    """
 
     start_time: float
     end_time: float
