@@ -193,105 +193,115 @@
       }
     },
     "current_implementation": {
-      "adr_0006_implementation": {
+      "integrated_pipeline_redesign": {
         "status": "In Progress",
-        "description": "Speech Timing Model Redesign - Fix YouTube Data Misinterpretation with Proper Separation of Concerns",
-        "current_phase": "Phase 1: Model Enhancement",
-        "critical_insight": "YouTube duration = subtitle display time (NOT speech time). Preserve all data with correct labels, move speech estimation to AlignmentService to maintain separation of concerns.",
-        "pipeline_design": {
-          "data_extraction": "Preserve YouTube data with correct labels: start_time, subtitle_display_duration, text, end_time=None",
-          "translation": "Pure text translation, no timing changes",
-          "alignment": "Complete timing here: end_time = start_time + estimated_speech_duration(text)",
-          "audio_processing": "Works with corrected speech timing"
+        "description": "Integrated Data Model Redesign + ADR-0006 + Millisecond Timing Implementation",
+        "current_phase": "Phase 1: Data Model Redesign",
+        "critical_insight": "Replace extraction-assumption-heavy models with speech/text fundamentals. Implement ADR-0006 speech timing fix and precision timing (int milliseconds) in one coordinated effort.",
+        "design_principles": {
+          "data_model": "Models based on speech and text fundamentals, not extraction assumptions",
+          "timing_precision": "Integer milliseconds for precise video timing without floating-point drift",
+          "separation_of_concerns": "Data extraction provides incomplete timing, alignment completes it",
+          "youtube_data_handling": "Preserve YouTube data with correct labels, ignore subtitle display duration for speech timing"
+        },
+        "new_models": {
+          "SpeechSegment": {
+            "purpose": "Natural speech with timing - fundamental audio unit",
+            "fields": ["start_time_ms: int", "estimated_duration_ms: Optional[int]"],
+            "responsibility": "None until alignment service completes timing"
+          },
+          "TextContent": {
+            "purpose": "Text content - original or translated",
+            "fields": ["text: str", "language: Optional[str]"],
+            "responsibility": "Pure text representation, no timing assumptions"
+          },
+          "SpeechTextPair": {
+            "purpose": "Relationship between speech and text",
+            "fields": ["speech: SpeechSegment", "original_text: TextContent", "translated_text: Optional[TextContent]", "subtitle_display_duration_ms: Optional[int]"],
+            "responsibility": "Preserves YouTube metadata without using it for speech timing"
+          }
         },
         "phases": [
           {
             "phase": 1,
-            "name": "Model Enhancement",
-            "duration": "2-3 days",
+            "name": "Data Model Redesign (Foundation)",
+            "duration": "1-2 days",
             "status": "pending",
-            "components": ["Enhanced TranscriptSegment Model", "Speech Duration Estimator"],
+            "components": ["SpeechSegment Model", "TextContent Model", "SpeechTextPair Model", "Speech Duration Estimator"],
             "files": ["src/videodub/core/models.py", "src/videodub/core/speech_estimation.py"],
-            "goal": "Preserve all YouTube data with correct labels, create speech estimation foundation",
+            "goal": "Replace extraction-assumption models with speech/text fundamentals using int milliseconds",
             "key_changes": [
-              "TranscriptSegment: add subtitle_display_duration field (preserve YouTube duration)",
-              "TranscriptSegment: end_time becomes optional (incomplete timing from extraction)", 
-              "Create SpeechDurationEstimator for AlignmentService to use"
+              "Implement SpeechSegment with int millisecond timing",
+              "Create TextContent for pure text representation",
+              "Build SpeechTextPair for speech-text relationships",
+              "Update SpeechDurationEstimator to work with milliseconds",
+              "Remove extraction-heavy models (TranscriptSegment, TimedTranslationSegment)"
             ]
           },
           {
             "phase": 2,
-            "name": "Data Extraction Update", 
-            "duration": "1-2 days",
+            "name": "Service Interface Updates",
+            "duration": "1 day",
             "status": "pending",
-            "components": ["YouTubeDataExtractionService Updates", "Timing Metadata Clarification"],
-            "files": ["src/videodub/services/data_extraction.py"],
-            "goal": "Output incomplete timing with preserved YouTube data, correctly labeled",
+            "components": ["Service Interface Updates", "Clean Service Boundaries"],
+            "files": ["src/videodub/core/interfaces.py"],
+            "goal": "Update service interfaces to use new models with clean boundaries",
             "key_changes": [
-              "Set end_time=None (incomplete timing)",
-              "Store YouTube duration as subtitle_display_duration",
-              "Update timing metadata to reflect incomplete timing"
+              "Update DataExtractionService interface for incomplete SpeechSegment output",
+              "Update AlignmentService interface for speech timing completion",
+              "Update TranslationService interface for pure TextContent handling",
+              "Ensure service contracts match new model responsibilities"
             ]
           },
           {
             "phase": 3,
-            "name": "Alignment Service Enhancement",
-            "duration": "2-3 days", 
+            "name": "ADR-0006 Implementation",
+            "duration": "3-4 days",
             "status": "pending",
-            "components": ["Speech Duration Integration", "Timing Completion Logic"],
-            "files": ["src/videodub/services/alignment.py"],
-            "goal": "Complete timing in AlignmentService using speech estimation",
+            "components": ["Data Extraction Service", "Alignment Service", "Translation Service Integration"],
+            "files": ["src/videodub/services/data_extraction.py", "src/videodub/services/alignment.py", "src/videodub/services/translator.py"],
+            "goal": "Implement ADR-0006 speech timing fix on new model foundation",
             "key_changes": [
-              "Integrate SpeechDurationEstimator into AlignmentService",
-              "Complete end_time calculation: start_time + estimated_speech_duration",
-              "Handle natural pauses between speech segments"
+              "DataExtractionService: Output incomplete SpeechSegment (no duration)",
+              "AlignmentService: Complete timing with speech estimation using milliseconds",
+              "Translation: Work with TextContent (clean text-only separation)",
+              "Preserve YouTube subtitle_display_duration_ms without using for speech timing",
+              "Eliminate overlapping segments through proper speech duration estimation"
             ]
           },
           {
             "phase": 4,
-            "name": "Audio Pipeline Validation",
-            "duration": "1-2 days",
-            "status": "pending", 
-            "components": ["TTS Service Validation", "Audio Processing Validation"],
-            "files": ["src/videodub/services/audio.py", "src/videodub/services/tts.py"],
-            "goal": "Validate audio pipeline works with corrected speech timing",
-            "key_changes": [
-              "Verify TTS works with speech-only durations",
-              "Handle natural pauses in audio processing",
-              "Test end-to-end audio generation"
-            ]
-          },
-          {
-            "phase": 5,
-            "name": "Testing & Validation",
-            "duration": "1-2 days",
+            "name": "Integration & Testing",
+            "duration": "2-3 days",
             "status": "pending",
-            "components": ["Speech Timing Tests", "Pipeline Integration Tests"],
-            "files": ["tests/"],
-            "goal": "Comprehensive testing of corrected timing model",
+            "components": ["End-to-End Pipeline", "Timing Validation", "Performance Testing"],
+            "files": ["tests/", "src/videodub/services/audio.py", "src/videodub/services/video.py"],
+            "goal": "Validate integrated pipeline with precision timing and zero overlapping segments",
             "key_changes": [
-              "Test speech duration estimation accuracy",
-              "Validate zero overlapping segments",
-              "End-to-end pipeline tests"
-            ]
-          },
-          {
-            "phase": 6,
-            "name": "Documentation & Future Planning", 
-            "duration": "1 day",
-            "status": "pending",
-            "components": ["Documentation Updates", "Model Refactoring Planning"],
-            "files": ["docs/architecture/", "docs/adr/0006-speech-timing-model-redesign.md"],
-            "goal": "Document changes and plan future model name refactoring",
-            "key_changes": [
-              "Update architecture documentation",
-              "Plan future refactoring of misleading model names (TimedTranscript, etc.)"
+              "Update audio/video services to work with SpeechTextPair",
+              "Comprehensive testing of speech timing accuracy",
+              "Validate zero overlapping segments (ADR-0006 success criteria)",
+              "Performance testing with millisecond precision",
+              "End-to-end pipeline validation"
             ]
           }
         ],
-        "total_estimated_duration": "8-12 days",
-        "success_criteria": "Zero overlapping segments, natural speech timing, preserved YouTube data with correct labels, maintained separation of concerns",
-        "future_work": "Refactor misleading model names (TimedTranscript, TimedTranslation) to better reflect actual data flow"
+        "total_estimated_duration": "7-10 days",
+        "success_criteria": [
+          "Models based on speech/text fundamentals, not extraction assumptions",
+          "Integer millisecond precision throughout pipeline",
+          "Zero overlapping segments (ADR-0006 goal achieved)",
+          "Natural speech timing with proper pause handling",
+          "Clean separation of concerns between services",
+          "Preserved YouTube data with correct labels"
+        ],
+        "benefits": [
+          "No double migration (precision timing built-in from start)",
+          "Clean foundation for future enhancements",
+          "Atomic changes with each phase self-contained",
+          "Addresses fundamental model design issues",
+          "Implements ADR-0006 on proper architecture"
+        ]
       }
     }
   }
