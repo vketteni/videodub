@@ -248,12 +248,51 @@ class TimedTranscript:
 
 @dataclass
 class DataExtractionResult:
-    """Result from data extraction containing transcript and file paths."""
+    """Result from data extraction containing transcript and file paths.
+    
+    DEPRECATED: Use SpeechTextExtractionResult instead.
+    This model will be removed in Phase 3 of the integrated redesign.
+    """
     
     timed_transcript: TimedTranscript
     video_file_path: Optional[Path] = None
     audio_file_path: Optional[Path] = None
     subtitle_file_path: Optional[Path] = None
+
+
+@dataclass
+class SpeechTextExtractionResult:
+    """Result from data extraction using speech/text fundamental models."""
+    
+    speech_text_pairs: List[SpeechTextPair]
+    video_metadata: VideoMetadata
+    source_type: SourceType
+    video_file_path: Optional[Path] = None
+    audio_file_path: Optional[Path] = None
+    subtitle_file_path: Optional[Path] = None
+    extraction_quality: Optional[float] = None  # 0.0-1.0 quality score
+    
+    def __post_init__(self) -> None:
+        """Validate extraction result."""
+        if not self.speech_text_pairs:
+            raise ValueError("Extraction result must have at least one speech-text pair")
+    
+    @property
+    def has_complete_timing(self) -> bool:
+        """Check if all speech segments have complete timing."""
+        return all(pair.has_complete_timing for pair in self.speech_text_pairs)
+    
+    @property
+    def segment_count(self) -> int:
+        """Get number of speech-text pairs."""
+        return len(self.speech_text_pairs)
+    
+    @property
+    def total_duration_ms(self) -> Optional[int]:
+        """Get total duration in milliseconds if timing is complete."""
+        if not self.has_complete_timing:
+            return None
+        return max(pair.speech.end_time_ms for pair in self.speech_text_pairs if pair.speech.end_time_ms is not None)
 
 
 @dataclass

@@ -196,7 +196,7 @@
       "integrated_pipeline_redesign": {
         "status": "In Progress",
         "description": "Integrated Data Model Redesign + ADR-0006 + Millisecond Timing Implementation",
-        "current_phase": "Phase 1: Data Model Redesign",
+        "current_phase": "Phase 2: Service Interface Updates (Complete) - Planning Phase 3",
         "critical_insight": "Replace extraction-assumption-heavy models with speech/text fundamentals. Implement ADR-0006 speech timing fix and precision timing (int milliseconds) in one coordinated effort.",
         "design_principles": {
           "data_model": "Models based on speech and text fundamentals, not extraction assumptions",
@@ -242,31 +242,42 @@
             "phase": 2,
             "name": "Service Interface Updates",
             "duration": "1 day",
-            "status": "pending",
-            "components": ["Service Interface Updates", "Clean Service Boundaries"],
-            "files": ["src/videodub/core/interfaces.py"],
+            "status": "completed",
+            "components": ["Service Interface Updates", "Clean Service Boundaries", "Media Service Redesign Planning"],
+            "files": ["src/videodub/core/interfaces.py", "src/videodub/core/models.py"],
             "goal": "Update service interfaces to use new models with clean boundaries",
             "key_changes": [
-              "Update DataExtractionService interface for incomplete SpeechSegment output",
-              "Update AlignmentService interface for speech timing completion",
-              "Update TranslationService interface for pure TextContent handling",
-              "Ensure service contracts match new model responsibilities"
-            ]
+              "✅ Added DataExtractionService: extract_speech_text_from_url/file → SpeechTextExtractionResult",
+              "✅ Added AlignmentService: complete_speech_timing → ADR-0006 core implementation",
+              "✅ Added TranslationService: translate_text_content/batch → pure TextContent handling",
+              "✅ Added TTSService: generate_speech_audio_batch → SpeechTextPair processing",
+              "✅ Added new SpeechTextExtractionResult model for extraction phase",
+              "✅ Deprecated legacy methods for gradual Phase 3 transition",
+              "🆕 DISCOVERED: AudioProcessingService & VideoProcessingService are extraction-assumption-heavy"
+            ],
+            "new_insights": {
+              "media_service_redesign": "AudioProcessingService and VideoProcessingService are segment-centric (extraction artifacts) rather than fundamental media operations",
+              "proposed_solution": "Replace with AudioTimelineService (pure audio timeline assembly) and MediaContainerService (pure media container manipulation)",
+              "separation_improvement": "AlignmentService produces timing specifications, media services execute without timing logic"
+            }
           },
           {
             "phase": 3,
-            "name": "ADR-0006 Implementation",
-            "duration": "3-4 days",
+            "name": "ADR-0006 Implementation + Media Service Redesign",
+            "duration": "4-5 days",
             "status": "pending",
-            "components": ["Data Extraction Service", "Alignment Service", "Translation Service Integration"],
-            "files": ["src/videodub/services/data_extraction.py", "src/videodub/services/alignment.py", "src/videodub/services/translator.py"],
-            "goal": "Implement ADR-0006 speech timing fix on new model foundation",
+            "components": ["Data Extraction Service", "Alignment Service", "Translation Service Integration", "AudioTimelineService", "MediaContainerService"],
+            "files": ["src/videodub/services/data_extraction.py", "src/videodub/services/alignment.py", "src/videodub/services/translator.py", "src/videodub/services/audio_timeline.py", "src/videodub/services/media_container.py"],
+            "goal": "Implement ADR-0006 speech timing fix + redesign media services as fundamental operations",
             "key_changes": [
-              "DataExtractionService: Output incomplete SpeechSegment (no duration)",
+              "DataExtractionService: Output incomplete SpeechTextPair (no duration)",
               "AlignmentService: Complete timing with speech estimation using milliseconds",
               "Translation: Work with TextContent (clean text-only separation)",
               "Preserve YouTube subtitle_display_duration_ms without using for speech timing",
-              "Eliminate overlapping segments through proper speech duration estimation"
+              "Eliminate overlapping segments through proper speech duration estimation",
+              "🆕 Replace AudioProcessingService with AudioTimelineService (pure audio timeline assembly)",
+              "🆕 Replace VideoProcessingService with MediaContainerService (pure media container manipulation)",
+              "🆕 Remove timing logic from media services - AlignmentService produces timing specs, media services execute"
             ]
           },
           {
@@ -286,14 +297,16 @@
             ]
           }
         ],
-        "total_estimated_duration": "7-10 days",
+        "total_estimated_duration": "8-11 days",
         "success_criteria": [
           "Models based on speech/text fundamentals, not extraction assumptions",
           "Integer millisecond precision throughout pipeline",
           "Zero overlapping segments (ADR-0006 goal achieved)",
           "Natural speech timing with proper pause handling",
           "Clean separation of concerns between services",
-          "Preserved YouTube data with correct labels"
+          "Preserved YouTube data with correct labels",
+          "Media services as fundamental operations (no timing logic)",
+          "Pure audio timeline assembly and media container manipulation"
         ],
         "benefits": [
           "No double migration (precision timing built-in from start)",

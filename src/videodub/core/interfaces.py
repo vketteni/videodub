@@ -11,6 +11,10 @@ from .models import (
     DataExtractionResult,
     ProcessingResult,
     SourceType,
+    SpeechSegment,
+    SpeechTextPair,
+    SpeechTextExtractionResult,
+    TextContent,
     TimedTranscript,
     TimedTranslation,
     TranscriptSegment,
@@ -36,6 +40,10 @@ class DataExtractionService(ABC):
 
         Raises:
             DataExtractionError: If extraction fails
+            
+        Note:
+            DEPRECATED: Use extract_speech_text_from_url instead.
+            This method will be removed in Phase 3 of the integrated redesign.
         """
         pass
 
@@ -49,6 +57,42 @@ class DataExtractionService(ABC):
 
         Returns:
             DataExtractionResult with extracted data and file paths
+
+        Raises:
+            DataExtractionError: If extraction fails
+            
+        Note:
+            DEPRECATED: Use extract_speech_text_from_file instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def extract_speech_text_from_url(self, url: str) -> SpeechTextExtractionResult:
+        """
+        Extract speech-text pairs from video URL using fundamental models.
+
+        Args:
+            url: Video URL to extract from
+
+        Returns:
+            SpeechTextExtractionResult with incomplete timing (AlignmentService completes timing)
+
+        Raises:
+            DataExtractionError: If extraction fails
+        """
+        pass
+
+    @abstractmethod
+    async def extract_speech_text_from_file(self, file_path: Path) -> SpeechTextExtractionResult:
+        """
+        Extract speech-text pairs from local video file using fundamental models.
+
+        Args:
+            file_path: Path to video file
+
+        Returns:
+            SpeechTextExtractionResult with incomplete timing (AlignmentService completes timing)
 
         Raises:
             DataExtractionError: If extraction fails
@@ -88,6 +132,10 @@ class TranslationService(ABC):
 
         Raises:
             TranslationError: If translation fails
+            
+        Note:
+            DEPRECATED: Use translate_text_content instead.
+            This method will be removed in Phase 3 of the integrated redesign.
         """
         pass
 
@@ -104,6 +152,48 @@ class TranslationService(ABC):
 
         Returns:
             List of translated text strings
+
+        Raises:
+            TranslationError: If translation fails
+            
+        Note:
+            DEPRECATED: Use translate_text_content_batch instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def translate_text_content(
+        self, text_content: TextContent, target_language: str
+    ) -> TextContent:
+        """
+        Translate TextContent using fundamental models.
+
+        Args:
+            text_content: TextContent to translate
+            target_language: Target language code
+
+        Returns:
+            TextContent with translated text and target language
+
+        Raises:
+            TranslationError: If translation fails
+        """
+        pass
+
+    @abstractmethod
+    async def translate_text_content_batch(
+        self, text_contents: List[TextContent], target_language: str
+    ) -> List[TextContent]:
+        """
+        Translate multiple TextContent objects.
+
+        Args:
+            text_contents: List of TextContent objects to translate
+            target_language: Target language code
+
+        Returns:
+            List of TextContent objects with translated text and target language
 
         Raises:
             TranslationError: If translation fails
@@ -136,6 +226,34 @@ class AlignmentService(ABC):
 
         Raises:
             AlignmentError: If alignment fails
+            
+        Note:
+            DEPRECATED: Use complete_speech_timing instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def complete_speech_timing(
+        self,
+        speech_text_pairs: List[SpeechTextPair],
+        config: AlignmentConfig,
+    ) -> List[SpeechTextPair]:
+        """
+        Complete speech timing using estimation for speech-text pairs.
+        
+        This is the core ADR-0006 implementation: converts incomplete timing from
+        DataExtractionService to complete timing with speech duration estimation.
+
+        Args:
+            speech_text_pairs: List of pairs with incomplete speech timing
+            config: Alignment configuration and strategy
+
+        Returns:
+            List of speech-text pairs with complete timing (estimated_duration_ms set)
+
+        Raises:
+            AlignmentError: If timing completion fails
         """
         pass
 
@@ -229,6 +347,33 @@ class TTSService(ABC):
             segments: Translation segments to generate audio for
             output_directory: Directory to save audio files
             language: Language code for TTS
+            voice: Optional voice identifier
+
+        Yields:
+            Paths to generated audio files
+
+        Raises:
+            TTSError: If audio generation fails
+            
+        Note:
+            DEPRECATED: Use generate_speech_audio_batch instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def generate_speech_audio_batch(
+        self, 
+        speech_text_pairs: List[SpeechTextPair],
+        output_directory: Path,
+        voice: Optional[str] = None
+    ) -> AsyncIterator[Path]:
+        """
+        Generate audio for multiple speech-text pairs.
+
+        Args:
+            speech_text_pairs: Speech-text pairs with translated text to generate audio for
+            output_directory: Directory to save audio files
             voice: Optional voice identifier
 
         Yields:
@@ -437,6 +582,30 @@ class AudioProcessingService(ABC):
 
         Returns:
             Path to combined audio file
+            
+        Note:
+            DEPRECATED: Use combine_speech_audio instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def combine_speech_audio(
+        self,
+        audio_files: List[Path],
+        output_path: Path,
+        speech_text_pairs: List[SpeechTextPair],
+    ) -> Path:
+        """
+        Combine multiple speech audio segments into a single file.
+
+        Args:
+            audio_files: List of audio file paths
+            output_path: Where to save combined audio
+            speech_text_pairs: Speech-text pairs with complete timing info
+
+        Returns:
+            Path to combined audio file
         """
         pass
 
@@ -450,6 +619,26 @@ class AudioProcessingService(ABC):
         Args:
             audio_path: Path to audio file
             segment: Translation segment with timing info
+
+        Returns:
+            Path to adjusted audio file
+            
+        Note:
+            DEPRECATED: Use adjust_speech_audio_timing instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def adjust_speech_audio_timing(
+        self, audio_path: Path, speech_text_pair: SpeechTextPair
+    ) -> Path:
+        """
+        Adjust audio timing to match speech segment duration.
+
+        Args:
+            audio_path: Path to audio file
+            speech_text_pair: Speech-text pair with complete timing info
 
         Returns:
             Path to adjusted audio file
@@ -476,6 +665,32 @@ class VideoProcessingService(ABC):
             translated_audio_path: Path to translated audio file
             output_path: Where to save dubbed video
             segments: Translation segments with timing info
+
+        Returns:
+            Path to dubbed video file
+            
+        Note:
+            DEPRECATED: Use create_speech_dubbed_video instead.
+            This method will be removed in Phase 3 of the integrated redesign.
+        """
+        pass
+
+    @abstractmethod
+    async def create_speech_dubbed_video(
+        self,
+        original_video_path: Path,
+        translated_audio_path: Path,
+        output_path: Path,
+        speech_text_pairs: List[SpeechTextPair],
+    ) -> Path:
+        """
+        Create dubbed video by combining original video with translated audio.
+
+        Args:
+            original_video_path: Path to original video file
+            translated_audio_path: Path to translated audio file
+            output_path: Where to save dubbed video
+            speech_text_pairs: Speech-text pairs with complete timing info
 
         Returns:
             Path to dubbed video file
